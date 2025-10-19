@@ -238,6 +238,81 @@ def validate_purchase():
         return jsonify({'error': 'Failed to validate purchase'}), 500
 
 
+@subscriptions_bp.route('/cancel', methods=['POST'])
+@require_auth
+def cancel_subscription():
+    """
+    Mark user's subscription as cancelled (user initiated cancellation)
+    This endpoint is called when user cancels through Apple Settings
+    """
+    try:
+        data = request.get_json() or {}
+        user_id = data.get('user_id')
+        reason = data.get('reason', 'user_cancelled')
+
+        if not user_id:
+            return jsonify({'error': 'user_id is required'}), 400
+
+        logger.info(f"Processing subscription cancellation for user {user_id}")
+
+        # Get current subscription
+        subscription = firebase_service.get_user_subscription(user_id)
+
+        if not subscription:
+            logger.warning(f"No subscription found for user {user_id}")
+            return jsonify({'error': 'No active subscription found'}), 404
+
+        # Update subscription with cancellation info
+        from datetime import datetime
+
+        subscription['will_renew'] = False
+        subscription['cancelled_at'] = datetime.utcnow().isoformat()
+        subscription['cancellation_reason'] = reason
+        subscription['status'] = 'cancelled'  # Will expire at expiration_date
+
+        # Keep is_active=true until expiration date (grace period)
+        expiration_date_str = subscription.get('expiration_date')
+        if expiration_date_str:
+            try:
+                exp_clean = expiration_date_str.replace('+00:00', '').replace('Z', '')
+                exp_date = datetime.fromisoformat(exp_clean)
+                now = datetime.utcnow()
+
+                # Still active if before expiration
+                subscription['is_active'] = now < exp_date
+            except:
+                pass
+
+        # Save updated subscription
+        firebase_service.save_user_subscription(user_id, subscription)
+
+        # Log cancellation analytics
+        analytics_data = {
+            'user_id': user_id,
+            'event': 'subscription_cancelled',
+            'reason': reason,
+            'tier': subscription.get('tier'),
+            'platform': subscription.get('platform'),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        firebase_service.log_analytics_event('subscription_cancelled', analytics_data)
+
+        logger.info(f"Subscription cancelled for user {user_id}, expires at {expiration_date_str}")
+
+        return jsonify({
+            'success': True,
+            'message': 'Subscription marked as cancelled',
+            'will_renew': False,
+            'expires_at': expiration_date_str,
+            'access_until': expiration_date_str,
+            'is_active': subscription.get('is_active', False)
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Failed to cancel subscription: {e}")
+        return jsonify({'error': 'Failed to process cancellation'}), 500
+
+
 @subscriptions_bp.route('/sync-status', methods=['POST'])
 @require_auth
 def sync_subscription_status():
@@ -507,6 +582,53 @@ def log_cancellation_analytics():
         return jsonify({'error': 'Failed to log analytics'}), 500
 
 
+@subscriptions_bp.route('/webhook/apple-s2s', methods=['POST'])
+def apple_s2s_webhook():
+    """
+    Handle Apple App Store Server-to-Server notifications
+    Receives notifications for subscription lifecycle events
+    """
+    try:
+        data = request.get_json()
+
+        if not data:
+            logger.warning("Apple S2S webhook received empty data")
+            return jsonify({'error': 'Empty payload'}), 400
+
+        notification_type = data.get('notification_type')
+        subtype = data.get('subtype')
+
+        logger.info(f"Received Apple S2S notification: {notification_type} (subtype: {subtype})")
+
+        # Extract transaction info
+        signed_payload = data.get('data', {})
+        transaction_info = signed_payload.get('signedTransactionInfo')
+
+        if not transaction_info:
+            logger.warning("No transaction info in Apple S2S notification")
+            return jsonify({'success': True}), 200
+
+        # Handle different notification types
+        if notification_type == 'DID_RENEW':
+            _handle_apple_renewal(signed_payload)
+        elif notification_type in ['DID_CHANGE_RENEWAL_STATUS', 'CANCEL']:
+            _handle_apple_cancellation(signed_payload, notification_type)
+        elif notification_type == 'EXPIRED':
+            _handle_apple_expiration(signed_payload)
+        elif notification_type == 'GRACE_PERIOD_EXPIRED':
+            _handle_apple_grace_period_expired(signed_payload)
+        elif notification_type == 'REFUND':
+            _handle_apple_refund(signed_payload)
+        else:
+            logger.info(f"Unhandled Apple S2S notification type: {notification_type}")
+
+        return jsonify({'success': True}), 200
+
+    except Exception as e:
+        logger.error(f"Failed to process Apple S2S webhook: {e}")
+        return jsonify({'error': 'Webhook processing failed'}), 500
+
+
 @subscriptions_bp.route('/webhook/revenuecat', methods=['POST'])
 def revenuecat_webhook():
     """Handle RevenueCat webhooks for subscription events"""
@@ -518,7 +640,7 @@ def revenuecat_webhook():
 
         data = request.get_json()
         event_type = data.get('event_type')
-        
+
         logger.info(f"Received RevenueCat webhook: {event_type}")
 
         if event_type in ['initial_purchase', 'renewal', 'product_change']:
@@ -861,3 +983,49 @@ def _calculate_subscription_status(subscription_data):
         pass
 
     return subscription_data
+
+
+# Apple S2S Webhook Handlers
+def _handle_apple_renewal(payload):
+    """Handle subscription renewal from Apple"""
+    try:
+        # TODO: Decode signed transaction info and update subscription
+        logger.info("Apple subscription renewed")
+    except Exception as e:
+        logger.error(f"Error handling Apple renewal: {e}")
+
+
+def _handle_apple_cancellation(payload, notification_type):
+    """Handle subscription cancellation from Apple"""
+    try:
+        # TODO: Decode signed transaction, mark subscription as cancelled
+        logger.info(f"Apple subscription cancelled: {notification_type}")
+    except Exception as e:
+        logger.error(f"Error handling Apple cancellation: {e}")
+
+
+def _handle_apple_expiration(payload):
+    """Handle subscription expiration from Apple"""
+    try:
+        # TODO: Decode signed transaction, mark as expired
+        logger.info("Apple subscription expired")
+    except Exception as e:
+        logger.error(f"Error handling Apple expiration: {e}")
+
+
+def _handle_apple_grace_period_expired(payload):
+    """Handle grace period expiration from Apple"""
+    try:
+        # TODO: Decode signed transaction, end grace period
+        logger.info("Apple subscription grace period expired")
+    except Exception as e:
+        logger.error(f"Error handling Apple grace period expiration: {e}")
+
+
+def _handle_apple_refund(payload):
+    """Handle refund from Apple"""
+    try:
+        # TODO: Decode signed transaction, revoke access
+        logger.info("Apple subscription refunded")
+    except Exception as e:
+        logger.error(f"Error handling Apple refund: {e}")

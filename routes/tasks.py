@@ -79,14 +79,21 @@ def create_tasks_batch():
                         reminder = Reminder(
                             task_id=None,
                             reminder_time=reminder_time,
-                            message=reminder_data['message']
+                            message=reminder_data['message'],
+                            notification=reminder_data.get('notification', {}),
+                            recurrence=reminder_data.get('recurrence', 'none'),
+                            priority=reminder_data.get('priority', 'normal')
                         )
                         task.reminders.append(reminder)
                 
                 # Process subtasks
                 if 'subtasks' in task_data and task_data['subtasks']:
                     task.subtasks = task_data['subtasks']
-                
+
+                # Process suggestions if present (AI-generated suggestions)
+                if 'suggestions' in task_data and task_data['suggestions']:
+                    task.suggestions = task_data['suggestions']
+
                 # Save to Firebase
                 task_dict = task.to_dict()
                 task_id = firebase_service.save_task(task_dict)
@@ -261,10 +268,17 @@ def create_tasks():
                         reminder = Reminder(
                             task_id=None,  # Will be set after task is saved
                             reminder_time=reminder_time,
-                            message=reminder_data['message']
+                            message=reminder_data['message'],
+                            notification=reminder_data.get('notification', {}),
+                            recurrence=reminder_data.get('recurrence', 'none'),
+                            priority=reminder_data.get('priority', 'normal')
                         )
                         task.reminders.append(reminder)
                         logger.debug(f"⏰ Added reminder {j+1}: {reminder_data['reminder_time']} - {reminder_data['message']}")
+
+                        # Log if Gemini provided notification
+                        if reminder_data.get('notification'):
+                            logger.debug(f"📝 Gemini notification: {reminder_data['notification']}")
                         
                     except (ValueError, TypeError, KeyError) as e:
                         logger.error(f"❌ Invalid reminder {j+1} for task {i+1}: {e}")
@@ -275,7 +289,12 @@ def create_tasks():
             if 'subtasks' in task_data and task_data['subtasks']:
                 logger.info(f"📝 Processing {len(task_data['subtasks'])} subtasks")
                 task.subtasks = task_data['subtasks']
-            
+
+            # Process suggestions if present (AI-generated suggestions)
+            if 'suggestions' in task_data and task_data['suggestions']:
+                logger.info(f"💡 Processing {len(task_data['suggestions'])} AI suggestions")
+                task.suggestions = task_data['suggestions']
+
             # Save to Firebase
             logger.info(f"💾 Saving task to Firebase: {task.title}")
             task_dict = task.to_dict()
@@ -442,7 +461,7 @@ def get_user_tasks(user_id):
 def update_task(task_id):
     try:
         data = request.get_json()
-        
+
         # Prepare updates
         updates = {}
         if 'status' in data:
@@ -453,16 +472,20 @@ def update_task(task_id):
             updates['description'] = data['description']
         if 'due_date' in data:
             updates['due_date'] = data['due_date']
+        if 'time' in data:
+            updates['time'] = data['time']
         if 'priority' in data:
             updates['priority'] = data['priority']
-        
+        if 'category' in data:
+            updates['category'] = data['category']
+
         updates['updated_at'] = datetime.utcnow().isoformat()
-        
+
         firebase_service = current_app.firebase_service
         firebase_service.update_task(task_id, updates)
-        
-        return jsonify({"message": "Task updated successfully"})
-        
+
+        return jsonify({"message": "Task updated successfully", "updated_fields": list(updates.keys())})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -1431,6 +1454,180 @@ def stop_task_reminders(task_id):
         return jsonify({"message": "All reminders stopped for this task"})
 
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@tasks_bp.route('/<task_id>/reminders/<reminder_id>', methods=['PUT'])
+@require_auth
+def update_single_reminder(task_id, reminder_id):
+    """Update a single reminder's time and message for a task"""
+    logger = get_logger()
+    logger.info(f"✏️ Updating single reminder: {reminder_id} for task: {task_id}")
+
+    try:
+        data = request.get_json()
+
+        # Validate input
+        if not data:
+            return jsonify({"error": "Request body is required"}), 400
+
+        reminder_time_str = data.get('reminder_time')
+        message = data.get('message')
+
+        # Get new optional fields with defaults
+        recurrence = data.get('recurrence', 'none')
+        priority = data.get('priority', 'normal')
+
+        if not reminder_time_str or not message:
+            logger.error("❌ Missing required fields: reminder_time and message")
+            return jsonify({"error": "reminder_time and message are required"}), 400
+
+        if not message.strip():
+            logger.error("❌ Empty message provided")
+            return jsonify({"error": "message cannot be empty"}), 400
+
+        # Validate message length (max 500 characters)
+        if len(message.strip()) > 500:
+            logger.error(f"❌ Message too long: {len(message.strip())} characters")
+            return jsonify({"error": "message cannot exceed 500 characters"}), 400
+
+        # Validate recurrence
+        valid_recurrence = ['none', 'daily', 'weekly', 'monthly']
+        if recurrence not in valid_recurrence:
+            logger.error(f"❌ Invalid recurrence value: {recurrence}")
+            return jsonify({"error": f"Invalid recurrence. Must be one of: {', '.join(valid_recurrence)}"}), 400
+
+        # Validate priority
+        valid_priority = ['low', 'normal', 'high']
+        if priority not in valid_priority:
+            logger.error(f"❌ Invalid priority value: {priority}")
+            return jsonify({"error": f"Invalid priority. Must be one of: {', '.join(valid_priority)}"}), 400
+
+        # Parse and validate reminder time
+        from datetime import timezone
+        import pytz
+
+        try:
+            # Handle ISO 8601 format with timezone
+            if reminder_time_str.endswith('Z'):
+                reminder_time_str = reminder_time_str[:-1] + '+00:00'
+            reminder_time = datetime.fromisoformat(reminder_time_str)
+
+            # Convert to UTC if has timezone, otherwise assume UTC
+            if reminder_time.tzinfo is None:
+                reminder_time = reminder_time.replace(tzinfo=timezone.utc)
+            else:
+                reminder_time = reminder_time.astimezone(timezone.utc)
+
+            logger.debug(f"🕐 Parsed reminder time: {reminder_time.isoformat()}")
+
+        except ValueError as e:
+            logger.error(f"❌ Invalid reminder_time format: {e}")
+            return jsonify({"error": "Invalid reminder_time format. Use ISO 8601 format (YYYY-MM-DDTHH:MM:SS+00:00)"}), 400
+
+        # Validate reminder is in the future
+        now_utc = datetime.now(timezone.utc)
+        if reminder_time <= now_utc:
+            logger.error(f"❌ Reminder time is in the past: {reminder_time}")
+            return jsonify({"error": "reminder_time must be in the future"}), 400
+
+        firebase_service = current_app.firebase_service
+
+        # Get the task first
+        if not firebase_service.db:
+            return jsonify({"error": "Firebase not configured"}), 500
+
+        task_doc = firebase_service.db.collection('tasks').document(task_id).get()
+        if not task_doc.exists:
+            logger.error(f"❌ Task not found: {task_id}")
+            return jsonify({"error": "Task not found"}), 404
+
+        task_data = task_doc.to_dict()
+
+        # Security: Verify task ownership
+        authenticated_user_id = request.user_id
+        if task_data.get('user_id') != authenticated_user_id:
+            logger.warning(f"❌ Unauthorized: User {authenticated_user_id} tried to update reminder for task owned by {task_data.get('user_id')}")
+            return jsonify({"error": "You don't have permission to update this reminder"}), 403
+
+        # Find and update the specific reminder
+        if 'reminders' in task_data and task_data['reminders']:
+            reminder_found = False
+            old_reminder_time = None
+
+            for reminder in task_data['reminders']:
+                # Match by reminder ID or by reminder time as fallback
+                if (reminder.get('id') == reminder_id or
+                    reminder.get('reminder_time') == reminder_id or
+                    str(reminder.get('reminder_time')) == reminder_id):
+
+                    # Check if reminder was already sent
+                    if reminder.get('sent', False):
+                        logger.error(f"❌ Cannot update sent reminder: {reminder_id}")
+                        return jsonify({"error": "Cannot update a reminder that has already been sent"}), 400
+
+                    # Store old reminder time for logging
+                    old_reminder_time = reminder.get('reminder_time')
+
+                    # Update reminder
+                    reminder['reminder_time'] = reminder_time.isoformat()
+                    reminder['message'] = message.strip()
+                    reminder['recurrence'] = recurrence
+                    reminder['priority'] = priority
+                    reminder_found = True
+
+                    logger.info(f"✅ Updated reminder: {reminder.get('id', reminder_id)}")
+                    logger.info(f"   Old time: {old_reminder_time}")
+                    logger.info(f"   New time: {reminder_time.isoformat()}")
+                    logger.info(f"   New message: {message.strip()}")
+                    logger.info(f"   Recurrence: {recurrence}")
+                    logger.info(f"   Priority: {priority}")
+                    break
+
+            if not reminder_found:
+                logger.warning(f"❌ Reminder not found: {reminder_id}")
+                return jsonify({"error": "Reminder not found"}), 404
+
+            # Update the task with modified reminders
+            firebase_service.update_task(task_id, {
+                'reminders': task_data['reminders'],
+                'updated_at': datetime.utcnow().isoformat()
+            })
+
+            # Notify scheduler about the update (for logging purposes)
+            # Note: Scheduler uses polling-based system, so no explicit rescheduling needed
+            scheduler_service = getattr(current_app, 'scheduler_service', None)
+            if scheduler_service:
+                try:
+                    # This will log the reschedule event
+                    scheduler_service.reschedule_reminders_for_task(task_id)
+                    logger.info(f"📅 Notified scheduler about reminder update for task {task_id}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to notify scheduler: {e}")
+                    # Continue anyway - database is updated and polling will handle it
+
+            logger.info(f"✅ Successfully updated reminder {reminder_id} for task {task_id}")
+
+            # Return updated reminder data
+            return jsonify({
+                "message": "Reminder updated successfully",
+                "reminder": {
+                    "id": reminder_id,
+                    "task_id": task_id,
+                    "reminder_time": reminder_time.isoformat(),
+                    "message": message.strip(),
+                    "recurrence": recurrence,
+                    "priority": priority,
+                    "sent": False
+                }
+            }), 200
+        else:
+            logger.warning(f"❌ No reminders found for task: {task_id}")
+            return jsonify({"error": "No reminders found for this task"}), 404
+
+    except Exception as e:
+        logger.error(f"❌ Error updating single reminder: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
 @tasks_bp.route('/<task_id>/reminders/<reminder_id>', methods=['DELETE'])

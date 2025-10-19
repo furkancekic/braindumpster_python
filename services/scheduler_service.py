@@ -7,14 +7,25 @@ from apscheduler.triggers.cron import CronTrigger
 from apscheduler.executors.pool import ThreadPoolExecutor
 import atexit
 import pytz
+import os
 
 from models.task import Task, TaskStatus, Reminder
 from services.firebase_service import FirebaseService
 from services.notification_service import NotificationService
 
-# Configure logging
+# Configure logging with file handler
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Add file handler for scheduler logs
+log_dir = '/var/www/braindumpster/braindumpster_python/logs'
+os.makedirs(log_dir, exist_ok=True)
+file_handler = logging.FileHandler(os.path.join(log_dir, 'reminders.log'))
+file_handler.setLevel(logging.INFO)
+file_formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s')
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+logger.info("📝 Scheduler logging to reminders.log initialized")
 
 class SchedulerService:
     """Service for managing background tasks and notification scheduling"""
@@ -130,77 +141,157 @@ class SchedulerService:
         """Process all due reminders and send notifications"""
         try:
             current_time = datetime.now(pytz.UTC)
-            logger.info(f"Processing due reminders at {current_time}")
-            
+            logger.info(f"📋 ========== PROCESSING DUE REMINDERS ==========")
+            logger.info(f"⏰ Current time (UTC): {current_time.strftime('%Y-%m-%d %H:%M:%S')}")
+
             # Get all users
             users = self.firebase_service.get_all_users()
-            
+            logger.info(f"👥 Found {len(users)} users to check")
+
             total_processed = 0
             total_sent = 0
-            
+            total_failed = 0
+
             for user in users:
                 try:
+                    logger.info(f"\n🔍 Checking reminders for user: {user['id']}")
+
                     # Get active reminders for this user
                     due_reminders = self.firebase_service.get_due_reminders(
                         user_id=user['id'],
                         current_time=current_time
                     )
-                    
+
+                    if not due_reminders:
+                        logger.info(f"   ✓ No due reminders for this user")
+                        continue
+
+                    logger.info(f"   📬 Found {len(due_reminders)} due reminder(s)")
+
                     for reminder_data in due_reminders:
                         total_processed += 1
-                        logger.debug(f"🔍 Processing reminder {total_processed}: {reminder_data['reminder_id']} for task {reminder_data['task_id']}")
-                        
+                        logger.info(f"\n   📌 Processing reminder #{total_processed}:")
+                        logger.info(f"      Reminder ID: {reminder_data['reminder_id']}")
+                        logger.info(f"      Task ID: {reminder_data['task_id']}")
+
                         # Get the full task data
                         task_data = self.firebase_service.get_task(reminder_data['task_id'])
                         if not task_data:
-                            logger.warning(f"Task not found: {reminder_data['task_id']}")
+                            logger.warning(f"      ❌ Task not found: {reminder_data['task_id']}")
+                            total_failed += 1
                             continue
-                        
+
                         # Convert to Task object
                         task = Task.from_dict(task_data)
-                        
+                        logger.info(f"      Task title: '{task.title}'")
+                        logger.info(f"      Task status: {task.status}")
+
                         # Skip if task is not approved or is completed
                         if task.status not in [TaskStatus.APPROVED, TaskStatus.PENDING]:
-                            logger.debug(f"⏭️ Skipping reminder for task {task.id} - status: {task.status}")
+                            logger.info(f"      ⏭️  Skipping - task status is '{task.status}' (not approved/pending)")
                             continue
-                        
+
                         # Find the specific reminder
                         reminder = None
                         for r in task.reminders:
-                            logger.debug(f"🔍 Checking reminder {r.id} vs {reminder_data['reminder_id']}, sent: {r.sent}, time: {r.reminder_time}")
-                            if (r.id == reminder_data['reminder_id'] and 
-                                not r.sent and 
-                                r.reminder_time <= current_time):
-                                reminder = r
-                                logger.debug(f"✅ Found matching reminder: {r.id}")
+                            if r.id == reminder_data['reminder_id'] and not r.sent:
+                                # Ensure timezone-aware comparison
+                                rt = r.reminder_time
+                                if rt.tzinfo is None:
+                                    # If somehow naive, assume UTC
+                                    rt = rt.replace(tzinfo=pytz.UTC)
+                                    logger.warning(f"      ⚠️ Reminder time was naive, assumed UTC: {rt}")
+
+                                ct = current_time
+                                if ct.tzinfo is None:
+                                    ct = ct.replace(tzinfo=pytz.UTC)
+
+                                # Now safe to compare
+                                if rt <= ct:
+                                    reminder = r
+                                    logger.info(f"      ✅ Matched reminder in task")
+                                    logger.info(f"         Reminder time: {rt.strftime('%Y-%m-%d %H:%M:%S')} UTC")
                                 break
-                        
+
                         if not reminder:
-                            logger.debug(f"❌ No matching reminder found for {reminder_data['reminder_id']}")
+                            logger.warning(f"      ❌ No matching unsent reminder found for {reminder_data['reminder_id']}")
+                            total_failed += 1
                             continue
-                        
+
+                        # Check if reminder is too old (fail-safe cleanup)
+                        # Ensure timezone-aware for time_diff calculation
+                        rt_for_diff = reminder.reminder_time
+                        if rt_for_diff.tzinfo is None:
+                            rt_for_diff = rt_for_diff.replace(tzinfo=pytz.UTC)
+                        ct_for_diff = current_time
+                        if ct_for_diff.tzinfo is None:
+                            ct_for_diff = ct_for_diff.replace(tzinfo=pytz.UTC)
+
+                        time_diff = ct_for_diff - rt_for_diff
+                        minutes_old = int(time_diff.total_seconds()/60)
+                        logger.info(f"      ⏱️  Reminder is {minutes_old} minutes old")
+
+                        if time_diff.total_seconds() > 3600:  # 1 hour old
+                            logger.warning(f"      ⚠️  FAIL-SAFE: Reminder too old ({minutes_old} min), marking as sent without notification")
+                            self.firebase_service.mark_reminder_as_sent(
+                                task_id=task.id,
+                                reminder_id=reminder.id
+                            )
+
+                            # Update task object
+                            for r in task.reminders:
+                                if r.id == reminder.id:
+                                    r.sent = True
+                                    break
+
+                            # Check if task should be auto-completed
+                            self.check_and_auto_complete_task(task)
+                            total_failed += 1
+                            continue
+
                         # Send notification
+                        logger.info(f"      📤 Attempting to send notification...")
                         success = self.notification_service.send_reminder_notification(reminder, task)
-                        
+
                         if success:
+                            logger.info(f"      ✅ Notification sent successfully!")
                             # Mark reminder as sent
                             self.firebase_service.mark_reminder_as_sent(
                                 task_id=task.id,
                                 reminder_id=reminder.id
                             )
                             total_sent += 1
-                            logger.info(f"Reminder sent for task: {task.title}")
+
+                            # Update the task object to reflect the reminder was sent
+                            for r in task.reminders:
+                                if r.id == reminder.id:
+                                    r.sent = True
+                                    break
+
+                            # Check if task should be auto-completed
+                            self.check_and_auto_complete_task(task)
                         else:
-                            logger.error(f"Failed to send reminder for task: {task.title}")
-                            
+                            logger.error(f"      ❌ FAILED to send notification for task: {task.title}")
+                            logger.error(f"         Check notification_service logs for details")
+                            total_failed += 1
+
                 except Exception as e:
-                    logger.error(f"Error processing reminders for user {user['id']}: {e}")
+                    logger.error(f"❌ Error processing reminders for user {user['id']}: {e}")
+                    import traceback
+                    logger.error(f"   Traceback: {traceback.format_exc()}")
                     continue
-            
-            logger.info(f"Reminder processing complete: {total_sent}/{total_processed} sent successfully")
-            
+
+            logger.info(f"\n{'='*60}")
+            logger.info(f"📊 REMINDER PROCESSING SUMMARY:")
+            logger.info(f"   Total processed: {total_processed}")
+            logger.info(f"   Successfully sent: {total_sent}")
+            logger.info(f"   Failed: {total_failed}")
+            logger.info(f"{'='*60}\n")
+
         except Exception as e:
-            logger.error(f"Error in process_due_reminders: {e}")
+            logger.error(f"❌ CRITICAL ERROR in process_due_reminders: {e}")
+            import traceback
+            logger.error(f"   Traceback: {traceback.format_exc()}")
     
     def send_daily_summaries(self):
         """Send daily task summaries to all users"""
@@ -333,7 +424,7 @@ class SchedulerService:
         try:
             if not self.scheduler:
                 return {"status": "not_initialized"}
-            
+
             jobs = []
             for job in self.scheduler.get_jobs():
                 jobs.append({
@@ -342,13 +433,72 @@ class SchedulerService:
                     "next_run": job.next_run_time.isoformat() if job.next_run_time else None,
                     "trigger": str(job.trigger)
                 })
-            
+
             return {
                 "status": "running" if self.scheduler.running else "stopped",
                 "jobs": jobs,
                 "job_count": len(jobs)
             }
-            
+
         except Exception as e:
             logger.error(f"Error getting scheduler status: {e}")
             return {"status": "error", "error": str(e)}
+
+    def check_and_auto_complete_task(self, task: Task):
+        """
+        Check if a task should be auto-completed based on reminders.
+        A task is auto-completed if:
+        1. It has NO due_date
+        2. ALL reminders have been sent
+        """
+        try:
+            # Check if task has a due_date
+            if task.due_date:
+                logger.debug(f"Task {task.id} has due_date, skipping auto-complete")
+                return
+
+            # Check if task has any reminders
+            if not task.reminders or len(task.reminders) == 0:
+                logger.debug(f"Task {task.id} has no reminders, skipping auto-complete")
+                return
+
+            # Check if all reminders have been sent
+            all_reminders_sent = all(reminder.sent for reminder in task.reminders)
+
+            if all_reminders_sent:
+                logger.info(f"🎯 Auto-completing task {task.id} ({task.title}) - all reminders sent, no due_date")
+
+                # Update task status to COMPLETED
+                from datetime import datetime
+                try:
+                    self.firebase_service.update_task(
+                        task_id=task.id,
+                        updates={
+                            'status': TaskStatus.COMPLETED.value,
+                            'completed_at': datetime.utcnow().isoformat(),
+                            'updated_at': datetime.utcnow().isoformat(),
+                            'auto_completed': True
+                        }
+                    )
+                    success = True
+                except Exception as e:
+                    logger.error(f"❌ Failed to update task: {e}")
+                    success = False
+
+                if success:
+                    logger.info(f"✅ Task {task.id} auto-completed successfully")
+
+                    # Send task completion notification
+                    try:
+                        self.notification_service.send_task_completion_notification(task)
+                        logger.info(f"📱 Completion notification sent for task {task.id}")
+                    except Exception as notif_error:
+                        logger.error(f"Failed to send completion notification: {notif_error}")
+                else:
+                    logger.error(f"❌ Failed to auto-complete task {task.id}")
+            else:
+                sent_count = sum(1 for r in task.reminders if r.sent)
+                logger.debug(f"Task {task.id} has {sent_count}/{len(task.reminders)} reminders sent")
+
+        except Exception as e:
+            logger.error(f"Error in check_and_auto_complete_task for task {task.id}: {e}")

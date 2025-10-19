@@ -796,8 +796,9 @@ class FirebaseService:
                     
                     try:
                         # Parse reminder time
+                        # CRITICAL FIX: Set check_if_past=False to allow due (past) reminders!
                         if isinstance(reminder_time_str, str):
-                            reminder_time = self._parse_reminder_time(reminder_time_str, user_timezone)
+                            reminder_time = self._parse_reminder_time(reminder_time_str, user_timezone, check_if_past=False)
                             if reminder_time is None:
                                 continue
                         else:
@@ -850,53 +851,95 @@ class FirebaseService:
             self.logger.warning(f"⚠️ Error getting user timezone: {e}")
         return 'UTC'
     
-    def _parse_reminder_time(self, reminder_time_str, user_timezone: str):
-        """Parse reminder time string with proper timezone handling"""
+    def _parse_reminder_time(self, reminder_time_str, user_timezone: str, check_if_past: bool = True):
+        """Parse reminder time string with proper timezone handling
+
+        Args:
+            reminder_time_str: The reminder time to parse
+            user_timezone: User's timezone for naive datetime conversion
+            check_if_past: If True, returns None for past reminders. Set to False when checking due reminders.
+        """
         from datetime import datetime, timezone
         import pytz
 
         try:
+            reminder_time = None  # Initialize
+
             # Handle DatetimeWithNanoseconds or other datetime objects
             if not isinstance(reminder_time_str, str):
-                if hasattr(reminder_time_str, 'isoformat'):
+                # If it's already a datetime object
+                if isinstance(reminder_time_str, datetime):
+                    reminder_time = reminder_time_str
+                    # Ensure it has timezone info
+                    if reminder_time.tzinfo is None:
+                        # Use user's timezone for naive datetime objects
+                        user_tz = pytz.timezone(user_timezone)
+                        reminder_time = user_tz.localize(reminder_time)
+                        reminder_time = reminder_time.astimezone(timezone.utc)
+                    elif reminder_time.tzinfo != timezone.utc:
+                        reminder_time = reminder_time.astimezone(timezone.utc)
+                    self.logger.debug(f"🕒 Parsed datetime object to UTC: {reminder_time}")
+                elif hasattr(reminder_time_str, 'isoformat'):
                     # Convert datetime object to string
                     reminder_time_str = reminder_time_str.isoformat()
                 else:
                     # Convert to string as fallback
                     reminder_time_str = str(reminder_time_str)
-            # First try to parse as ISO format with timezone
-            if 'Z' in reminder_time_str or '+' in reminder_time_str or reminder_time_str.endswith('00:00'):
-                # Already has timezone info
-                reminder_time = datetime.fromisoformat(reminder_time_str.replace('Z', '+00:00'))
-                self.logger.debug(f"🕒 Parsed timezone-aware reminder: {reminder_time}")
-                return reminder_time
-            
-            # Parse as naive datetime
-            reminder_time = datetime.fromisoformat(reminder_time_str)
-            
-            # Handle timezone-naive datetime
-            if reminder_time.tzinfo is None:
-                try:
-                    # For existing reminders, assume they were created in Turkey timezone
-                    # since the app is primarily used in Turkey
-                    turkey_tz = pytz.timezone('Europe/Istanbul')
-                    reminder_time = turkey_tz.localize(reminder_time)
-                    self.logger.debug(f"🇹🇷 Assumed naive reminder time is Turkey timezone: {reminder_time}")
-                    
-                    # Convert to UTC for consistent comparison
-                    reminder_time = reminder_time.astimezone(timezone.utc)
-                    self.logger.debug(f"🌍 Converted to UTC: {reminder_time}")
-                    
-                except Exception as tz_error:
-                    self.logger.warning(f"⚠️ Error with Turkey timezone conversion: {tz_error}")
-                    # Fallback to UTC
-                    reminder_time = reminder_time.replace(tzinfo=timezone.utc)
-                    self.logger.debug(f"🕒 Fallback: converted naive reminder time to UTC: {reminder_time}")
-            
+
+            # Parse from string if not already parsed as datetime object
+            if reminder_time is None and isinstance(reminder_time_str, str):
+                # First try to parse as ISO format with timezone
+                if 'Z' in reminder_time_str or '+' in reminder_time_str or ('-' in reminder_time_str and 'T' in reminder_time_str):
+                    # Already has timezone info
+                    reminder_time = datetime.fromisoformat(reminder_time_str.replace('Z', '+00:00'))
+                    # Ensure it's actually timezone-aware
+                    if reminder_time.tzinfo is None:
+                        self.logger.warning(f"⚠️ String looked timezone-aware but parsed as naive: {reminder_time_str}")
+                        reminder_time = reminder_time.replace(tzinfo=timezone.utc)
+                    elif reminder_time.tzinfo != timezone.utc:
+                        reminder_time = reminder_time.astimezone(timezone.utc)
+                    self.logger.debug(f"🕒 Parsed timezone-aware reminder to UTC: {reminder_time}")
+                else:
+                    # Parse as naive datetime
+                    reminder_time = datetime.fromisoformat(reminder_time_str)
+
+                    # Handle timezone-naive datetime
+                    if reminder_time.tzinfo is None:
+                        try:
+                            # Use user's timezone for naive datetimes
+                            user_tz = pytz.timezone(user_timezone)
+                            reminder_time = user_tz.localize(reminder_time)
+                            self.logger.debug(f"🌍 Assumed naive reminder time is user's timezone ({user_timezone}): {reminder_time}")
+                            # Convert to UTC for consistent storage and comparison
+                            reminder_time = reminder_time.astimezone(timezone.utc)
+                            self.logger.debug(f"🌍 Converted to UTC: {reminder_time}")
+                        except Exception as tz_error:
+                            self.logger.warning(f"⚠️ Error with user timezone conversion: {tz_error}")
+                            # Fallback to UTC
+                            reminder_time = reminder_time.replace(tzinfo=timezone.utc)
+                            self.logger.debug(f"🕒 Fallback: converted naive reminder time to UTC: {reminder_time}")
+                    else:
+                        # It has timezone, convert to UTC
+                        reminder_time = reminder_time.astimezone(timezone.utc)
+                        self.logger.debug(f"🌍 Converted timezone-aware to UTC: {reminder_time}")
+
+            # CRITICAL: Check if reminder time is in the past (when creating reminders)
+            # This prevents Gemini from creating past reminders
+            # IMPORTANT: Only skip past reminders when check_if_past=True (during creation)
+            # When checking due reminders (check_if_past=False), we MUST allow past times!
+            if check_if_past:
+                current_time_utc = datetime.now(timezone.utc)
+                if reminder_time < current_time_utc:
+                    time_diff = (current_time_utc - reminder_time).total_seconds() / 60
+                    self.logger.warning(f"⚠️ Skipping PAST reminder during creation: {reminder_time.strftime('%Y-%m-%d %H:%M:%S %Z')} (was {time_diff:.1f} minutes ago)")
+                    return None
+
             return reminder_time
-            
+
         except Exception as e:
             self.logger.error(f"❌ Error parsing reminder time '{reminder_time_str}': {e}")
+            import traceback
+            self.logger.error(f"   Traceback: {traceback.format_exc()}")
             return None
     
     def mark_reminder_as_sent(self, task_id: str, reminder_id: str) -> bool:

@@ -29,6 +29,11 @@ class PurchaseValidationService:
         """
         Validate iOS App Store receipt (StoreKit 2 compatible)
 
+        Implements Apple's recommended approach:
+        1. Always validate against production first
+        2. If status code 21007 (sandbox receipt in production), retry with sandbox
+        3. If status code 21008 (production receipt in sandbox), retry with production
+
         Args:
             receipt_data: Base64-encoded receipt data
 
@@ -36,7 +41,8 @@ class PurchaseValidationService:
             Tuple[bool, Dict]: (is_valid, validation_data)
         """
         try:
-            logger.info("Validating iOS receipt with App Store")
+            logger.info("🍎 [Apple Receipt Validation] Starting validation process")
+            logger.info("   Step 1: Validating against PRODUCTION endpoint first (Apple's recommendation)")
 
             # Prepare receipt data
             receipt_payload = {
@@ -45,12 +51,21 @@ class PurchaseValidationService:
                 "exclude-old-transactions": False  # Get all transactions for latest purchase
             }
 
-            # Try production first, then sandbox
+            # STEP 1: Always try production first (Apple's recommended approach)
             validation_result = self._validate_with_apple(receipt_payload, production=True)
+            logger.info(f"   Production validation result: status={validation_result.get('status')}")
 
+            # STEP 2: Handle environment mismatch
             if validation_result['status'] == 21007:  # Sandbox receipt sent to production
-                logger.info("Sandbox receipt detected, retrying with sandbox URL")
+                logger.info("   ⚠️  Status 21007: Sandbox receipt detected in production request")
+                logger.info("   Step 2: Retrying with SANDBOX endpoint")
                 validation_result = self._validate_with_apple(receipt_payload, production=False)
+                logger.info(f"   Sandbox validation result: status={validation_result.get('status')}")
+            elif validation_result['status'] == 21008:  # Production receipt sent to sandbox (shouldn't happen but handle it)
+                logger.info("   ⚠️  Status 21008: Production receipt detected (unexpected)")
+                logger.info("   Step 2: Retrying with PRODUCTION endpoint")
+                validation_result = self._validate_with_apple(receipt_payload, production=True)
+                logger.info(f"   Production retry result: status={validation_result.get('status')}")
 
             if validation_result['status'] == 0:  # Success
                 # Extract relevant purchase information
@@ -110,11 +125,17 @@ class PurchaseValidationService:
         """
         Validate iOS in-app purchase receipt with Apple App Store
 
+        Implements Apple's recommended approach:
+        1. Always validate against production first
+        2. If status code 21007 (sandbox receipt in production), retry with sandbox
+        3. If status code 21008 (production receipt in sandbox), retry with production
+
         Returns:
             Tuple[bool, Dict]: (is_valid, validation_data)
         """
         try:
-            logger.info(f"Validating iOS purchase: transaction_id={transaction_id}")
+            logger.info(f"🍎 [Apple Receipt Validation] Validating purchase: transaction_id={transaction_id}")
+            logger.info("   Step 1: Validating against PRODUCTION endpoint first")
 
             # Prepare receipt data
             receipt_payload = {
@@ -123,12 +144,21 @@ class PurchaseValidationService:
                 "exclude-old-transactions": True
             }
 
-            # Try production first, then sandbox
+            # STEP 1: Always try production first (Apple's recommended approach)
             validation_result = self._validate_with_apple(receipt_payload, production=True)
+            logger.info(f"   Production validation result: status={validation_result.get('status')}")
 
+            # STEP 2: Handle environment mismatch
             if validation_result['status'] == 21007:  # Sandbox receipt sent to production
-                logger.info("Sandbox receipt detected, retrying with sandbox URL")
+                logger.info("   ⚠️  Status 21007: Sandbox receipt detected in production request")
+                logger.info("   Step 2: Retrying with SANDBOX endpoint")
                 validation_result = self._validate_with_apple(receipt_payload, production=False)
+                logger.info(f"   Sandbox validation result: status={validation_result.get('status')}")
+            elif validation_result['status'] == 21008:  # Production receipt sent to sandbox
+                logger.info("   ⚠️  Status 21008: Production receipt detected (unexpected)")
+                logger.info("   Step 2: Retrying with PRODUCTION endpoint")
+                validation_result = self._validate_with_apple(receipt_payload, production=True)
+                logger.info(f"   Production retry result: status={validation_result.get('status')}")
 
             if validation_result['status'] == 0:  # Success
                 # Extract relevant purchase information
@@ -298,21 +328,53 @@ class PurchaseValidationService:
             return False, {'error': f'Unsupported platform: {platform}'}
     
     def _validate_with_apple(self, receipt_payload: Dict, production: bool = True) -> Dict:
-        """Make request to Apple's receipt validation servers"""
+        """
+        Make request to Apple's receipt validation servers
+
+        Args:
+            receipt_payload: Receipt data with password and options
+            production: If True, use production endpoint; if False, use sandbox endpoint
+
+        Returns:
+            Dict: Apple's validation response with status code
+        """
         url = self.APPLE_PRODUCTION_URL if production else self.APPLE_SANDBOX_URL
-        
-        response = requests.post(
-            url,
-            json=receipt_payload,
-            headers={'Content-Type': 'application/json'},
-            timeout=30
-        )
-        
-        if response.status_code == 200:
-            return response.json()
-        else:
-            logger.error(f"Apple API request failed: {response.status_code}")
-            return {'status': -1, 'error': 'Network error'}
+        env_name = "PRODUCTION" if production else "SANDBOX"
+
+        logger.info(f"   📤 Sending validation request to Apple {env_name} endpoint")
+        logger.info(f"   URL: {url}")
+
+        try:
+            response = requests.post(
+                url,
+                json=receipt_payload,
+                headers={'Content-Type': 'application/json'},
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                status = result.get('status')
+                logger.info(f"   📥 Apple response received: status={status}")
+
+                if status == 0:
+                    logger.info(f"   ✅ Receipt validation SUCCESSFUL on {env_name}")
+                else:
+                    status_msg = self._get_apple_status_message(status)
+                    logger.warning(f"   ⚠️  Receipt validation failed: {status_msg}")
+
+                return result
+            else:
+                logger.error(f"   ❌ Apple API HTTP error: {response.status_code}")
+                logger.error(f"   Response: {response.text[:200]}")
+                return {'status': -1, 'error': 'Network error'}
+
+        except requests.exceptions.Timeout:
+            logger.error(f"   ❌ Apple API request timeout (30s)")
+            return {'status': -1, 'error': 'Request timeout'}
+        except Exception as e:
+            logger.error(f"   ❌ Apple API request exception: {e}")
+            return {'status': -1, 'error': str(e)}
     
     def _get_google_play_access_token(self) -> Optional[str]:
         """Get access token for Google Play API using service account"""

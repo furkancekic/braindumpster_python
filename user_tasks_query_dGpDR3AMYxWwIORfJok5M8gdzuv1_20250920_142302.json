@@ -1,0 +1,776 @@
+{
+  "query_info": {
+    "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+    "query_time": "2025-09-20T14:23:02.072065",
+    "total_tasks": 22
+  },
+  "user_data": {
+    "created_at": "2025-07-06T13:31:04.079Z",
+    "notification_preferences": {},
+    "updated_at": "2025-09-20 11:22:36.859000+00:00",
+    "device_tokens": [],
+    "fcm_tokens": [
+      "ePqnKOWhvUUzsurDL8ffsC:APA91bFSURnFutORUxGRZ1lzvVMahcEPl2YvQt74lqvT_fi225KstGMe8AJqmwe-bE9ssmDMgu-VsiTgIRaFIw7OzLdcItBZdyMWThSkhnhRByaIlN503VI",
+      "cTttxzOSakrMhM8N6kbt5I:APA91bFCK0e889Ub9D6WeWM5hbJqtbRyQxl9kE4k_WG7EnXHrJ_g6l7RKPAbDrpTpUfEV2yHrCZK2Fr0usdXSdLjkNnHys4JH6wR-3nlHOtcEu0vRlloBO0",
+      "euhlT11pe5FJVWJ8BNyeqe:APA91bFG8GvQ1eMBLd774Em9ikyyHkzGi9ZBocZacFBTrfz1VHQxwIsDXG8waW87oL8FASNwP03XFu8xNFna5J-THn7FVGR7bTmKbaxqq7-_DNQ1ppCs5vI",
+      "fBiFR45dz0_jphkF3fhN5G:APA91bGhGGVq5R-6UZ-ZNtHAqK2ZtLL8CmUKoz2Hul3fW1jViNPGz4e6OKErZn0-4fSD01M8EsCjxzEHmtQCPxAqvejZ6zADI4ot1Hs7OxWRYPdxDIqmM4w"
+    ],
+    "last_active_at": "2025-07-09 15:32:45.536000+00:00",
+    "last_sign_in_at": "2025-07-09 15:32:45.536000+00:00",
+    "preferences": {
+      "smart_notifications": true,
+      "voice_feedback_enabled": true,
+      "export_format": "json",
+      "vibration_enabled": true,
+      "calendar_sync_enabled": false,
+      "data_usage_optimization": false,
+      "auto_sync_enabled": true,
+      "biometric_enabled": false,
+      "working_hours_end": 17,
+      "voice_recognition_language": "en-US",
+      "sync_frequency_minutes": 15,
+      "working_hours_start": 9,
+      "sound_enabled": true,
+      "default_reminder_minutes": 10,
+      "notifications_enabled": true,
+      "theme_mode": "system",
+      "location_services_enabled": false,
+      "weekend_notifications": false,
+      "ai_suggestions_enabled": true,
+      "language_code": "en",
+      "offline_mode_enabled": true
+    },
+    "photo_url": null,
+    "display_name": null,
+    "is_email_verified": false,
+    "email": "cekicmuhammedfurkan@gmail.com",
+    "connected_providers": [
+      "email"
+    ],
+    "sign_in_count": 25
+  },
+  "statistics": {
+    "total_tasks": 22,
+    "by_status": {
+      "deleted": 15,
+      "pending": 6,
+      "approved": 1
+    },
+    "with_reminders": 19,
+    "total_reminders": 42,
+    "sent_reminders": 3,
+    "pending_reminders": 39,
+    "oldest_task": {
+      "id": "sPVwQscyUMWjvUPFhfnv",
+      "title": "Spor salonuna git",
+      "date": "2025-09-19 14:59:59 UTC"
+    },
+    "newest_task": {
+      "id": "6sNguuDyq0t5GQPLGt0R",
+      "title": "Sağlıklı Yaşam Alışkanlıkları Edinme",
+      "date": "2025-09-20 11:17:26 UTC"
+    }
+  },
+  "tasks": [
+    {
+      "created_at": "2025-09-19T15:13:10.663112+00:00",
+      "description": "Üçüncü bildirim",
+      "subtasks": [],
+      "id": "0jaBQycuKjz2FJr41MqT",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:26:12.863702",
+      "title": "Üçüncü Bildirim",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": null,
+      "deleted_at": "2025-09-20T09:26:12.863705",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-19T15:13:10.663327+00:00",
+          "task_id": null,
+          "message": "Reminder: Üçüncü Bildirim",
+          "reminder_time": "2025-09-19T18:14:00",
+          "id": "f410edb2-0c18-4c4b-8c1d-4a13a2cfdea0",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T11:17:26.552450+00:00",
+      "description": "Bir yıl içinde sağlıklı yaşam alışkanlıkları edin. Düzenli egzersiz yap, sağlıklı beslen ve yeterli uyku al.",
+      "subtasks": [],
+      "id": "6sNguuDyq0t5GQPLGt0R",
+      "ai_generated": true,
+      "conversation_id": null,
+      "title": "Sağlıklı Yaşam Alışkanlıkları Edinme",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "status": "pending",
+      "updated_at": "2025-09-20T11:17:26.552454+00:00",
+      "due_date": "2026-09-20T18:00:00",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T11:17:26.552713+00:00",
+          "task_id": null,
+          "message": "Reminder: Sağlıklı Yaşam Alışkanlıkları Edinme",
+          "reminder_time": "2026-09-18T10:00:00",
+          "id": "f6d8fa61-6a12-4099-928a-3783be42c8e0",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T11:17:26.552814+00:00",
+          "task_id": null,
+          "message": "Reminder: Sağlıklı Yaşam Alışkanlıkları Edinme",
+          "reminder_time": "2026-09-15T16:00:00",
+          "id": "e75239cb-4526-4999-aeb8-8c84f5fa7f4a",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T11:17:26.552897+00:00",
+          "task_id": null,
+          "message": "Reminder: Sağlıklı Yaşam Alışkanlıkları Edinme",
+          "reminder_time": "2026-09-10T09:00:00",
+          "id": "26831020-ae74-4e57-adac-58a2c14d0797",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T09:47:59.770926+00:00",
+      "description": "1 dakika sonra 10'ar saniye arayla 3 adet bildirim gönder.",
+      "subtasks": [],
+      "id": "7jQHXWIh73jQVNw6qkQ5",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T10:06:06.387242",
+      "title": "3 Adet Bildirim Gönder",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": "2025-09-20T12:48:00",
+      "deleted_at": "2025-09-20T10:06:06.387246",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T09:47:59.771018+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T12:48:00",
+          "id": "b8598c40-d3a5-4622-a034-baab8b1d0e12",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T09:47:59.771054+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T12:48:00",
+          "id": "4d9f9646-7c0b-4d32-86f6-685c0eea2a1e",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T09:47:59.771085+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T12:48:00",
+          "id": "2a88dcfb-f3c5-4ee3-b9f2-b8c7537ba02b",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-19T15:05:41.299412+00:00",
+      "description": "Full body workout yap. İki güne bir spora gitmeye çalış. Isınma hareketleri: Omuz hareketleri (2 tane), Göğüs hareketleri (2 tane). Ana egzersizler: Sırt hareketleri (boyunda çekme olmamasına dikkat et), Biceps (Z barla), Arka kol, Bacak. Her egzersizi yaparken doğru formu koru ve aşırı zorlamaktan kaçın. Boyun bölgesinde ağrı hissedersen sırt hareketlerine dikkat et.",
+      "subtasks": [],
+      "id": "8xeGRI5Ahbhpm1jk7nvD",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:27:03.537561",
+      "title": "Spor Programını Uygula",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": null,
+      "deleted_at": "2025-09-20T09:27:03.537566",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-19T15:05:41.299568+00:00",
+          "task_id": null,
+          "message": "Reminder: Spor Programını Uygula",
+          "reminder_time": "2025-09-21T17:00:00",
+          "id": "569510b7-0f1a-4fb6-883e-7bee99c9f448",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-19T15:05:41.299617+00:00",
+          "task_id": null,
+          "message": "Reminder: Spor Programını Uygula",
+          "reminder_time": "2025-09-23T17:00:00",
+          "id": "dccc8ed2-f0a1-4ca9-a4f3-0f79d25e7e26",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-19T15:13:09.592023+00:00",
+      "description": "Birinci bildirim",
+      "subtasks": [],
+      "id": "EjLL9yUzqTKuC4KqySPl",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:27:06.091509",
+      "title": "İlk Bildirim",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": null,
+      "deleted_at": "2025-09-20T09:27:06.091514",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-19T15:13:09.592235+00:00",
+          "task_id": null,
+          "message": "Reminder: İlk Bildirim",
+          "reminder_time": "2025-09-19T18:12:00",
+          "id": "e74aa8d9-163f-4b95-94c1-c3d3d7a3b3d9",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-19T14:59:59.608416+00:00",
+      "description": "Akşam için plan yap ve kız arkadaşınla görüş.",
+      "subtasks": [],
+      "id": "J721uKeSsRsFETgWOAv8",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:27:08.895304",
+      "title": "Akşam planı yap",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": null,
+      "deleted_at": "2025-09-20T09:27:08.895311",
+      "priority": "low",
+      "reminders": []
+    },
+    {
+      "created_at": "2025-09-20T11:17:25.276559+00:00",
+      "description": "Proje X üzerinde çalışmaya başla ve bir yıl içinde tamamla. Araştırma, planlama, geliştirme ve test aşamalarını içerir.",
+      "subtasks": [],
+      "id": "MsilXXOz0WybqlgLZl4a",
+      "ai_generated": true,
+      "conversation_id": null,
+      "title": "Proje X'i Geliştirme",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "status": "pending",
+      "updated_at": "2025-09-20T11:17:25.276561+00:00",
+      "due_date": "2026-09-20T18:00:00",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T11:17:25.276691+00:00",
+          "task_id": null,
+          "message": "Reminder: Proje X'i Geliştirme",
+          "reminder_time": "2026-09-18T10:00:00",
+          "id": "ac870499-4c51-496a-8c35-722bffc86812",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T11:17:25.276729+00:00",
+          "task_id": null,
+          "message": "Reminder: Proje X'i Geliştirme",
+          "reminder_time": "2026-09-15T16:00:00",
+          "id": "f0f2ebe4-0f64-4eec-9eab-bb1e481c5b50",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T11:17:25.276764+00:00",
+          "task_id": null,
+          "message": "Reminder: Proje X'i Geliştirme",
+          "reminder_time": "2026-09-10T09:00:00",
+          "id": "57f84c99-aeb1-4e02-a59c-cb47972141e6",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T10:01:41.383718+00:00",
+      "description": "1 dakika sonra başlayacak şekilde 3 adet, 10'ar saniye arayla bildirim gönder.",
+      "subtasks": [],
+      "id": "SSKHI3NzC0J8RFvoItFv",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T10:06:09.646919",
+      "title": "3 adet bildirim gönder",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": "2025-09-20T13:02:00",
+      "deleted_at": "2025-09-20T10:06:09.646922",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T10:01:41.383870+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 adet bildirim gönder",
+          "reminder_time": "2025-09-20T13:02:00",
+          "id": "2c5068ed-d61e-440e-9968-1dd64d1e0361",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T10:01:41.383919+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 adet bildirim gönder",
+          "reminder_time": "2025-09-20T13:02:00",
+          "id": "28ec365c-d1a3-4349-bdfc-66f011c96641",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T10:01:41.383959+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 adet bildirim gönder",
+          "reminder_time": "2025-09-20T13:02:00",
+          "id": "6a90e197-002d-4c48-9f5f-8df3135d2252",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-19T15:07:01.297946+00:00",
+      "description": "Yılbaşına kadar bir uygulama geliştirip yayınlayarak para kazanmaya çalış",
+      "subtasks": [],
+      "id": "XvzuwlvGLoGDcdXQ0aEg",
+      "ai_generated": true,
+      "conversation_id": "hEoaJ9oZSG7RpJwOmk2U",
+      "title": "Yılbaşına Kadar Uygulama Geliştirip Yayınlama ve Para Kazanma",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "status": "approved",
+      "updated_at": "2025-09-19T15:07:01.693862",
+      "due_date": "2025-12-31T23:59:00",
+      "priority": "high",
+      "reminders": []
+    },
+    {
+      "created_at": "2025-09-20T10:56:39.630860+00:00",
+      "description": "Bir dakika sonra başlayarak 10'ar saniye arayla 3 adet bildirim gönder.",
+      "subtasks": [],
+      "id": "ax96PPzixmvafig45uU8",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T11:13:25.723727",
+      "title": "3 Adet Bildirim Gönder",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": "2025-09-20T13:57:00",
+      "deleted_at": "2025-09-20T11:13:25.723734",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T10:56:39.630993+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T13:57:00",
+          "id": "b7f70d25-4980-4385-844e-f00d8007a9f8",
+          "sent": true
+        },
+        {
+          "created_at": "2025-09-20T10:56:39.631037+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T13:57:00",
+          "id": "f4a0185a-9d7a-421f-be75-85bd7cac796c",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T10:56:39.631069+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T13:57:00",
+          "id": "7a77d0f6-9852-48f2-aea3-066f5af02de7",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-19T15:01:34.244879+00:00",
+      "description": "Yılbaşına kadar birkaç tane uygulama geliştirip yayınlayarak bu uygulamalardan para kazanmayı hedefle.",
+      "subtasks": [],
+      "id": "dqB5P9sYbP8ykAFZTkav",
+      "ai_generated": true,
+      "conversation_id": null,
+      "title": "Yılbaşına Kadar Uygulama Geliştirip Yayınlama ve Para Kazanma",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "status": "pending",
+      "updated_at": "2025-09-19T15:01:34.244881+00:00",
+      "due_date": "2025-12-31T23:59:00",
+      "priority": "high",
+      "reminders": [
+        {
+          "created_at": "2025-09-19T15:01:34.245027+00:00",
+          "task_id": null,
+          "message": "Reminder: Yılbaşına Kadar Uygulama Geliştirip Yayınlama ve Para Kazanma",
+          "reminder_time": "2025-12-29T10:00:00",
+          "id": "57f1dda5-40ea-434c-8fb3-5f5463cfe13e",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-19T15:01:34.245081+00:00",
+          "task_id": null,
+          "message": "Reminder: Yılbaşına Kadar Uygulama Geliştirip Yayınlama ve Para Kazanma",
+          "reminder_time": "2025-12-15T14:00:00",
+          "id": "85e37fc8-0cf9-4290-919f-f15161b02cac",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-19T15:01:34.245126+00:00",
+          "task_id": null,
+          "message": "Reminder: Yılbaşına Kadar Uygulama Geliştirip Yayınlama ve Para Kazanma",
+          "reminder_time": "2025-11-30T16:00:00",
+          "id": "fc16fcbc-8f4c-4e4b-a739-96d88967e0b9",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-19T15:06:53.200498+00:00",
+      "description": "Spor salonuna git ve egzersiz yap",
+      "subtasks": [],
+      "id": "eBcNQOqTG07rlSVac9AG",
+      "ai_generated": true,
+      "conversation_id": "hEoaJ9oZSG7RpJwOmk2U",
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:27:11.306626",
+      "title": "Spor salonuna git",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": null,
+      "deleted_at": "2025-09-20T09:27:11.306632",
+      "priority": "medium",
+      "reminders": []
+    },
+    {
+      "created_at": "2025-09-20T08:39:31.134931+00:00",
+      "description": "1 dakika sonra ilk bildirimi gönder.",
+      "subtasks": [],
+      "id": "em9LcqkP4rbXU7MLZ6fd",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:25:33.833421",
+      "title": "Bildirim Gönder (1/3)",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": "2025-09-20T11:40:00",
+      "deleted_at": "2025-09-20T09:25:33.833423",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T08:39:31.135171+00:00",
+          "task_id": null,
+          "message": "Reminder: Bildirim Gönder (1/3)",
+          "reminder_time": "2025-09-20T11:40:00",
+          "id": "44467097-3ccd-4160-8d94-8b8acc0799e9",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T11:12:40.419893+00:00",
+      "description": "1 dakika sonra 15'er saniye arayla 3 tane bildirim gönder.",
+      "subtasks": [],
+      "id": "fXH36GuY6dbWURhy2YBC",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T11:16:37.870157",
+      "title": "3 Adet Bildirim Gönder",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": "2025-09-20T14:13:00",
+      "deleted_at": "2025-09-20T11:16:37.870163",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T11:12:40.420169+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T14:13:00",
+          "id": "2c0d058b-dd06-4d72-b9b4-d591eb301ba2",
+          "sent": true
+        },
+        {
+          "created_at": "2025-09-20T11:12:40.420265+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T14:13:00",
+          "id": "14d9a44a-e979-41a0-80ab-d24b227ab898",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T11:17:25.736167+00:00",
+      "description": "Bir yıl içinde yeni bir beceri öğren. Bu, programlama, dil öğrenme, müzik aleti çalma veya herhangi başka bir beceri olabilir. Düzenli olarak pratik yap.",
+      "subtasks": [],
+      "id": "gTgbgAo7WAb3rAFdGJUI",
+      "ai_generated": true,
+      "conversation_id": null,
+      "title": "Yeni Bir Beceri Öğrenme",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "status": "pending",
+      "updated_at": "2025-09-20T11:17:25.736171+00:00",
+      "due_date": "2026-09-20T18:00:00",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T11:17:25.736370+00:00",
+          "task_id": null,
+          "message": "Reminder: Yeni Bir Beceri Öğrenme",
+          "reminder_time": "2026-09-18T10:00:00",
+          "id": "3fe0dcf2-4f8e-49f5-8956-4f3fffb7c56b",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T11:17:25.736440+00:00",
+          "task_id": null,
+          "message": "Reminder: Yeni Bir Beceri Öğrenme",
+          "reminder_time": "2026-09-15T16:00:00",
+          "id": "f793a4ed-f85b-42af-8824-1675f3f41900",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T11:17:25.736500+00:00",
+          "task_id": null,
+          "message": "Reminder: Yeni Bir Beceri Öğrenme",
+          "reminder_time": "2026-09-10T09:00:00",
+          "id": "5d9b780d-a3b6-4165-bbc7-481e1d7a0c12",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T08:39:31.980130+00:00",
+      "description": "İlk bildirimden 10 saniye sonra ikinci bildirimi gönder.",
+      "subtasks": [],
+      "id": "hkST62GqVl8J6odDfAaI",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:25:44.087291",
+      "title": "Bildirim Gönder (2/3)",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": "2025-09-20T11:40:00",
+      "deleted_at": "2025-09-20T09:25:44.087296",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T08:39:31.980383+00:00",
+          "task_id": null,
+          "message": "Reminder: Bildirim Gönder (2/3)",
+          "reminder_time": "2025-09-20T11:40:00",
+          "id": "a859446d-c902-4c83-a948-f8bd04b3d79e",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T09:31:38.564022+00:00",
+      "description": "1 dakika sonra 10'ar saniye arayla 3 adet bildirim gönderecek hatırlatıcı oluştur.",
+      "subtasks": [],
+      "id": "jb9nJvtU1LOfsq4zZSnZ",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:35:22.650168",
+      "title": "Hatırlatıcı Kur",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": null,
+      "deleted_at": "2025-09-20T09:35:22.650171",
+      "priority": "high",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T09:31:38.564094+00:00",
+          "task_id": null,
+          "message": "Reminder: Hatırlatıcı Kur",
+          "reminder_time": "2025-09-20T12:32:00",
+          "id": "3832ce9a-15ad-4e17-8ffb-3eb7ad70496b",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T09:31:38.564124+00:00",
+          "task_id": null,
+          "message": "Reminder: Hatırlatıcı Kur",
+          "reminder_time": "2025-09-20T12:32:00",
+          "id": "3a2ece2d-6f08-435c-8b48-13366631d90e",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T09:31:38.564151+00:00",
+          "task_id": null,
+          "message": "Reminder: Hatırlatıcı Kur",
+          "reminder_time": "2025-09-20T12:32:00",
+          "id": "d0dc1a7c-fecc-4938-88f9-430c2cf1b172",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-19T14:59:59.261496+00:00",
+      "description": "Kız arkadaşınla spor salonuna git ve 1.5-2 saat spor yap.",
+      "subtasks": [],
+      "id": "sPVwQscyUMWjvUPFhfnv",
+      "ai_generated": true,
+      "conversation_id": null,
+      "title": "Spor salonuna git",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "status": "pending",
+      "updated_at": "2025-09-20 10:55:11.595000+00:00",
+      "due_date": "2025-09-19T18:59:00",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-19T14:59:59.261828+00:00",
+          "task_id": null,
+          "message": "Reminder: Spor salonuna git",
+          "reminder_time": "2025-09-19T17:59:00",
+          "id": "7ef6ec39-79af-426f-bd4c-91d032b4c143",
+          "sent": true
+        },
+        {
+          "created_at": "2025-09-19T14:59:59.261924+00:00",
+          "task_id": null,
+          "message": "Reminder: Spor salonuna git",
+          "reminder_time": "2025-09-19T16:59:00",
+          "id": "5f6559b2-6848-40ae-9200-7150f110329c",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-19T15:13:10.054235+00:00",
+      "description": "İkinci bildirim",
+      "subtasks": [],
+      "id": "wARbvFyvqqqsII8piYos",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:27:13.793850",
+      "title": "İkinci Bildirim",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": null,
+      "deleted_at": "2025-09-20T09:27:13.793851",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-19T15:13:10.054472+00:00",
+          "task_id": null,
+          "message": "Reminder: İkinci Bildirim",
+          "reminder_time": "2025-09-19T18:13:00",
+          "id": "4862c212-c7a3-45e3-9a56-0a498f59e860",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T10:05:59.014484+00:00",
+      "description": "1 dakika sonra başlayacak şekilde 10'ar saniye arayla 3 adet bildirim gönder.",
+      "subtasks": [],
+      "id": "wccp5vAX6bh7wI5dfOul",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T11:13:17.465392",
+      "title": "3 Adet Bildirim Gönder",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": "2025-09-20T13:06:00",
+      "deleted_at": "2025-09-20T11:13:17.465395",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T10:05:59.014651+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T13:06:00",
+          "id": "4ecbae02-269e-452c-8afd-9dc216f3c31e",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T10:05:59.014706+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T13:06:00",
+          "id": "c7f3c69e-2f07-406f-ad15-ef558e67b54e",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T10:05:59.014752+00:00",
+          "task_id": null,
+          "message": "Reminder: 3 Adet Bildirim Gönder",
+          "reminder_time": "2025-09-20T13:06:00",
+          "id": "9c833a5d-7ba4-4154-b48c-862fdc033bc3",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T11:17:26.051645+00:00",
+      "description": "Bir yıl içinde bir seyahat planı oluştur ve bu planı uygula. Gideceğin yerleri araştır, bütçe oluştur ve rezervasyonları yap.",
+      "subtasks": [],
+      "id": "yNiJrBdMuIO348fZOCbC",
+      "ai_generated": true,
+      "conversation_id": null,
+      "title": "Seyahat Planı Oluşturma ve Uygulama",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "status": "pending",
+      "updated_at": "2025-09-20T11:17:26.051649+00:00",
+      "due_date": "2026-09-20T18:00:00",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T11:17:26.051907+00:00",
+          "task_id": null,
+          "message": "Reminder: Seyahat Planı Oluşturma ve Uygulama",
+          "reminder_time": "2026-09-18T10:00:00",
+          "id": "e3c907a1-4e74-41a9-a85d-c4e0feb0ef1b",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T11:17:26.051999+00:00",
+          "task_id": null,
+          "message": "Reminder: Seyahat Planı Oluşturma ve Uygulama",
+          "reminder_time": "2026-09-15T16:00:00",
+          "id": "a2ca3bbe-9098-4bb3-9115-a5020db7090d",
+          "sent": false
+        },
+        {
+          "created_at": "2025-09-20T11:17:26.052080+00:00",
+          "task_id": null,
+          "message": "Reminder: Seyahat Planı Oluşturma ve Uygulama",
+          "reminder_time": "2026-09-10T09:00:00",
+          "id": "f46b2fa6-f7e6-4475-844f-8138cb665e91",
+          "sent": false
+        }
+      ]
+    },
+    {
+      "created_at": "2025-09-20T08:39:32.488213+00:00",
+      "description": "İkinci bildirimden 10 saniye sonra üçüncü bildirimi gönder.",
+      "subtasks": [],
+      "id": "ykyA6uvrFPIZJE1FQJJm",
+      "ai_generated": true,
+      "conversation_id": null,
+      "status": "deleted",
+      "updated_at": "2025-09-20T09:25:59.540291",
+      "title": "Bildirim Gönder (3/3)",
+      "user_id": "dGpDR3AMYxWwIORfJok5M8gdzuv1",
+      "due_date": "2025-09-20T11:40:00",
+      "deleted_at": "2025-09-20T09:25:59.540299",
+      "priority": "medium",
+      "reminders": [
+        {
+          "created_at": "2025-09-20T08:39:32.488450+00:00",
+          "task_id": null,
+          "message": "Reminder: Bildirim Gönder (3/3)",
+          "reminder_time": "2025-09-20T11:40:00",
+          "id": "7baa76b7-0463-469f-b389-3a7be73b392f",
+          "sent": false
+        }
+      ]
+    }
+  ]
+}

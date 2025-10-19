@@ -1,0 +1,28 @@
+# Core Flask dependencies
+Flask==2.3.3
+Flask-CORS==4.0.0
+Flask-Limiter==3.5.0
+python-dotenv==1.0.0
+
+# AI and Firebase services
+google-generativeai==0.3.2
+firebase-admin==6.2.0
+pyrebase4==4.7.1
+
+# Scheduling and background tasks
+APScheduler==3.10.4
+pytz==2023.3
+
+# HTTP requests
+requests>=2.19.1,<2.30
+
+# Production server
+gunicorn==21.2.0
+
+
+# Security and utilities
+cryptography>=3.4.8
+python-jose[cryptography]==3.3.0
+
+# Redis for rate limiting (optional)
+redis>=4.0.0

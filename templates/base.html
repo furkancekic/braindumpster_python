@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Task Scheduler</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .chat-container {
+            height: calc(100vh - 2rem);
+        }
+        .message-bubble {
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    {% block content %}{% endblock %}
+    
+    <script>
+        // Global JavaScript functions for the web interface
+        async function sendMessage(message, userId, userToken) {
+            try {
+                const response = await fetch('/api/chat/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userToken}`
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        message: message
+                    })
+                });
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Error sending message:', error);
+                return { error: 'Failed to send message' };
+            }
+        }
+        
+        async function approveTasks(taskIds, userId, userToken) {
+            try {
+                const response = await fetch('/api/tasks/approve', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userToken}`
+                    },
+                    body: JSON.stringify({
+                        task_ids: taskIds,
+                        user_id: userId
+                    })
+                });
+                
+                return await response.json();
+            } catch (error) {
+                console.error('Error approving tasks:', error);
+                return { error: 'Failed to approve tasks' };
+            }
+        }
+    </script>
+</body>
+</html>

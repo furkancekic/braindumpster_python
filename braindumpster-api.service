@@ -1,0 +1,22 @@
+[Unit]
+Description=Braindumpster API Server
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/braindumpster_python
+Environment=PATH=/path/to/braindumpster_python/venv/bin
+Environment=FLASK_ENV=production
+EnvironmentFile=/path/to/braindumpster_python/.env
+ExecStart=/path/to/braindumpster_python/venv/bin/gunicorn --config gunicorn.conf.py "app:create_app('production')"
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+TimeoutStopSec=5
+PrivateTmp=true
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

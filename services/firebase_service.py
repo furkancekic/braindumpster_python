@@ -1279,26 +1279,62 @@ class FirebaseService:
     def save_user_subscription(self, user_id: str, subscription_data: Dict) -> bool:
         """Save or update user's subscription"""
         self.logger.info(f"💾 Saving subscription for user: {user_id}")
-        
+
         if not self.db:
             self.logger.warning("⚠️ Firebase not configured - cannot save subscription")
             return False
-        
+
         try:
             self._ensure_connection()
-            
+
             subscription_ref = self.db.collection('subscriptions').document(user_id)
-            
+
+            # CRITICAL FIX: Calculate is_active and status based on expiration_date
+            from datetime import datetime, timedelta
+
+            expiration_date_str = subscription_data.get('expiration_date')
+
+            # Lifetime subscriptions (no expiration)
+            if not expiration_date_str:
+                subscription_data['is_active'] = True
+                subscription_data['status'] = 'active'
+                self.logger.info(f"  Lifetime subscription - setting is_active=True")
+            else:
+                # Parse and validate expiration date
+                try:
+                    # Handle different date formats
+                    if isinstance(expiration_date_str, str):
+                        expiration_str_clean = expiration_date_str.replace('+00:00', '').replace('Z', '')
+                        expiration_date = datetime.fromisoformat(expiration_str_clean)
+                    else:
+                        expiration_date = expiration_date_str
+
+                    now = datetime.utcnow()
+                    is_active = now < expiration_date
+
+                    subscription_data['is_active'] = is_active
+                    subscription_data['status'] = 'active' if is_active else 'expired'
+
+                    self.logger.info(f"  Expiration: {expiration_date.isoformat()}")
+                    self.logger.info(f"  Current time: {now.isoformat()}")
+                    self.logger.info(f"  Calculated is_active: {is_active}")
+
+                except Exception as e:
+                    self.logger.error(f"  Error parsing expiration date: {e}")
+                    # If parsing fails, default to active if expiration is in future
+                    subscription_data['is_active'] = True
+                    subscription_data['status'] = 'active'
+
             # Add metadata
             subscription_data.update({
                 'updated_at': firestore.SERVER_TIMESTAMP
             })
-            
+
             subscription_ref.set(subscription_data, merge=True)
-            
-            self.logger.info(f"✅ Subscription saved for user {user_id}")
+
+            self.logger.info(f"✅ Subscription saved for user {user_id} (is_active={subscription_data['is_active']})")
             return True
-            
+
         except Exception as e:
             self.logger.error(f"❌ Error saving subscription for user {user_id}: {str(e)}")
             return False

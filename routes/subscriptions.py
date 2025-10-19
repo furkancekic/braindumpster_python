@@ -69,7 +69,7 @@ def get_subscription_status():
 
         # Get subscription from Firestore
         subscription = firebase_service.get_user_subscription(user_id)
-        
+
         if not subscription:
             # Return free tier status
             return jsonify({
@@ -82,7 +82,10 @@ def get_subscription_status():
                 'is_in_grace_period': False
             })
 
-        return jsonify(subscription)  # subscription is already a dict
+        # CRITICAL FIX: Calculate real-time subscription status based on expiration date
+        subscription = _calculate_subscription_status(subscription)
+
+        return jsonify(subscription)
 
     except Exception as e:
         logger.error(f"Failed to get subscription status: {e}")
@@ -791,3 +794,70 @@ def _product_id_to_tier(product_id):
     else:
         # Default to monthly if unknown
         return 'monthly_premium'
+
+
+def _calculate_subscription_status(subscription_data):
+    """
+    Calculate real-time subscription status based on expiration date
+
+    CRITICAL: This fixes the bug where is_active=false even when expiration is in the future
+    """
+    if not subscription_data:
+        return subscription_data
+
+    # Get expiration date
+    expiration_date_str = subscription_data.get('expiration_date')
+
+    # Lifetime subscriptions (no expiration date)
+    if not expiration_date_str:
+        subscription_data['is_active'] = True
+        subscription_data['status'] = 'active'
+        subscription_data['is_premium'] = True
+        logger.info(f"Subscription status: LIFETIME (always active)")
+        return subscription_data
+
+    # Parse expiration date
+    try:
+        # Handle different date formats
+        if isinstance(expiration_date_str, str):
+            # Remove timezone info for parsing
+            expiration_str_clean = expiration_date_str.replace('+00:00', '').replace('Z', '')
+            expiration_date = datetime.fromisoformat(expiration_str_clean)
+        else:
+            expiration_date = expiration_date_str
+
+        # Get current time (UTC)
+        now = datetime.utcnow()
+
+        # Calculate if subscription is active
+        is_active = now < expiration_date
+
+        # Update subscription data with calculated status
+        subscription_data['is_active'] = is_active
+        subscription_data['is_premium'] = is_active
+        subscription_data['status'] = 'active' if is_active else 'expired'
+
+        # Add debug logging
+        logger.info(f"Subscription status calculation:")
+        logger.info(f"  Current time (UTC): {now.isoformat()}")
+        logger.info(f"  Expiration date: {expiration_date.isoformat()}")
+        logger.info(f"  Is active: {is_active}")
+        logger.info(f"  Status: {subscription_data['status']}")
+
+        # Calculate grace period (7 days after expiration)
+        if not is_active:
+            grace_period_end = expiration_date + timedelta(days=7)
+            is_in_grace_period = now < grace_period_end
+            subscription_data['is_in_grace_period'] = is_in_grace_period
+
+            if is_in_grace_period:
+                logger.info(f"  In grace period until: {grace_period_end.isoformat()}")
+        else:
+            subscription_data['is_in_grace_period'] = False
+
+    except Exception as e:
+        logger.error(f"Error calculating subscription status: {e}")
+        # If parsing fails, keep original values
+        pass
+
+    return subscription_data

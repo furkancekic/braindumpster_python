@@ -89,13 +89,106 @@ def get_subscription_status():
         return jsonify({'error': 'Failed to get subscription status'}), 500
 
 
+@subscriptions_bp.route('/verify-receipt', methods=['POST'])
+@require_auth
+def verify_receipt():
+    """
+    Verify iOS App Store receipt (iOS compatible)
+    Called by NativeStoreManager after StoreKit verification
+    """
+    try:
+        data = request.get_json() or {}
+
+        receipt_data = data.get('receiptData')
+        user_id = data.get('userId')
+        device_info = data.get('deviceInfo', {})
+        app_version = data.get('appVersion')
+        bundle_id = data.get('bundleId')
+
+        if not receipt_data:
+            logger.warning("Missing receiptData in verify-receipt request")
+            return jsonify({
+                'success': False,
+                'isPremium': False,
+                'message': 'Missing receipt data'
+            }), 400
+
+        logger.info(f"Verifying iOS receipt for user {user_id or 'unknown'}")
+        logger.debug(f"Device: {device_info.get('model')}, OS: {device_info.get('osVersion')}")
+
+        # Validate iOS receipt with App Store
+        try:
+            is_valid, validation_data = purchase_validation_service.validate_ios_receipt(receipt_data)
+
+            if is_valid:
+                logger.info("iOS receipt validated successfully with App Store")
+
+                # Extract product information from validation response
+                product_id = validation_data.get('product_id')
+                transaction_id = validation_data.get('transaction_id')
+                expiration_date = validation_data.get('expiration_date')
+                environment = validation_data.get('environment', 'production')
+
+                # Update user subscription in Firestore if user_id provided
+                if user_id and product_id:
+                    subscription_data = {
+                        'user_id': user_id,
+                        'tier': _product_id_to_tier(product_id),
+                        'status': 'active',
+                        'purchase_date': datetime.utcnow().isoformat(),
+                        'expiration_date': expiration_date,
+                        'transaction_id': transaction_id,
+                        'platform': 'ios',
+                        'environment': environment,
+                        'is_active': True,
+                        'will_renew': 'lifetime' not in product_id.lower(),
+                        'created_at': datetime.utcnow().isoformat(),
+                        'updated_at': datetime.utcnow().isoformat()
+                    }
+
+                    firebase_service.save_user_subscription(user_id, subscription_data)
+                    logger.info(f"Subscription updated for user {user_id}")
+
+                return jsonify({
+                    'success': True,
+                    'isPremium': True,
+                    'productId': product_id,
+                    'expirationDate': expiration_date,
+                    'environment': environment,
+                    'message': 'Receipt verified successfully'
+                }), 200
+            else:
+                logger.warning(f"iOS receipt validation failed: {validation_data.get('error')}")
+                return jsonify({
+                    'success': False,
+                    'isPremium': False,
+                    'message': validation_data.get('error', 'Receipt validation failed')
+                }), 400
+
+        except Exception as e:
+            logger.error(f"iOS receipt validation error: {e}")
+            return jsonify({
+                'success': False,
+                'isPremium': False,
+                'message': f'Validation error: {str(e)}'
+            }), 500
+
+    except Exception as e:
+        logger.error(f"Failed to verify receipt: {e}")
+        return jsonify({
+            'success': False,
+            'isPremium': False,
+            'message': 'Internal server error'
+        }), 500
+
+
 @subscriptions_bp.route('/validate-purchase', methods=['POST'])
 @require_auth
 def validate_purchase():
     """Validate a purchase with app store and update subscription"""
     try:
         data = validate_json_data(request.get_json(), PURCHASE_VALIDATION_SCHEMA)
-        
+
         transaction_id = data['transaction_id']
         receipt_data = data['receipt_data']
         user_id = data['user_id']
@@ -119,15 +212,15 @@ def validate_purchase():
 
         # Create or update subscription
         subscription_data = _extract_subscription_data(data, receipt_data, platform)
-        
+
         # Save to Firestore
         firebase_service.save_user_subscription(user_id, subscription_data)
-        
+
         # Log analytics
         _log_purchase_analytics(user_id, product_id, platform, transaction_id)
 
         logger.info(f"Purchase validated and subscription created for user {user_id}")
-        
+
         return jsonify({
             'valid': True,
             'subscription': subscription_data,
@@ -683,3 +776,18 @@ def _handle_billing_issue(webhook_data):
     # Send notification to user about billing issue
     # TODO(context7): Implement billing issue notification
     logger.warning(f"Billing issue for user {app_user_id}")
+
+
+def _product_id_to_tier(product_id):
+    """Convert product ID to subscription tier"""
+    product_id_lower = product_id.lower()
+
+    if 'monthly' in product_id_lower:
+        return 'monthly_premium'
+    elif 'yearly' in product_id_lower or 'annual' in product_id_lower:
+        return 'yearly_premium'
+    elif 'lifetime' in product_id_lower:
+        return 'lifetime_premium'
+    else:
+        # Default to monthly if unknown
+        return 'monthly_premium'

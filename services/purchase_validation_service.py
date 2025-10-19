@@ -25,42 +25,123 @@ class PurchaseValidationService:
         self.google_service_account_key = Config.GOOGLE_SERVICE_ACCOUNT_KEY if hasattr(Config, 'GOOGLE_SERVICE_ACCOUNT_KEY') else None
         self.revenuecat_webhook_secret = Config.REVENUECAT_WEBHOOK_SECRET if hasattr(Config, 'REVENUECAT_WEBHOOK_SECRET') else None
     
+    def validate_ios_receipt(self, receipt_data: str) -> Tuple[bool, Dict]:
+        """
+        Validate iOS App Store receipt (StoreKit 2 compatible)
+
+        Args:
+            receipt_data: Base64-encoded receipt data
+
+        Returns:
+            Tuple[bool, Dict]: (is_valid, validation_data)
+        """
+        try:
+            logger.info("Validating iOS receipt with App Store")
+
+            # Prepare receipt data
+            receipt_payload = {
+                "receipt-data": receipt_data,
+                "password": self.apple_shared_secret,
+                "exclude-old-transactions": False  # Get all transactions for latest purchase
+            }
+
+            # Try production first, then sandbox
+            validation_result = self._validate_with_apple(receipt_payload, production=True)
+
+            if validation_result['status'] == 21007:  # Sandbox receipt sent to production
+                logger.info("Sandbox receipt detected, retrying with sandbox URL")
+                validation_result = self._validate_with_apple(receipt_payload, production=False)
+
+            if validation_result['status'] == 0:  # Success
+                # Extract relevant purchase information
+                receipt_info = validation_result.get('receipt', {})
+                in_app_purchases = receipt_info.get('in_app', [])
+
+                # Get the most recent purchase
+                if in_app_purchases:
+                    # Sort by purchase date (most recent first)
+                    sorted_purchases = sorted(
+                        in_app_purchases,
+                        key=lambda x: int(x.get('purchase_date_ms', 0)),
+                        reverse=True
+                    )
+                    latest_purchase = sorted_purchases[0]
+
+                    # Convert expiration date to ISO format if present
+                    expiration_date = None
+                    if latest_purchase.get('expires_date_ms'):
+                        try:
+                            from datetime import datetime
+                            exp_timestamp = int(latest_purchase['expires_date_ms']) / 1000
+                            expiration_date = datetime.fromtimestamp(exp_timestamp).isoformat()
+                        except:
+                            pass
+
+                    # Determine environment
+                    environment = 'sandbox' if validation_result.get('environment') == 'Sandbox' else 'production'
+
+                    validation_data = {
+                        'transaction_id': latest_purchase.get('transaction_id'),
+                        'product_id': latest_purchase.get('product_id'),
+                        'purchase_date': latest_purchase.get('purchase_date_ms'),
+                        'expiration_date': expiration_date,
+                        'is_trial_period': latest_purchase.get('is_trial_period', 'false') == 'true',
+                        'is_in_intro_offer_period': latest_purchase.get('is_in_intro_offer_period', 'false') == 'true',
+                        'bundle_id': receipt_info.get('bundle_id'),
+                        'application_version': receipt_info.get('application_version'),
+                        'environment': environment
+                    }
+
+                    logger.info(f"iOS receipt validated successfully: {latest_purchase.get('product_id')}")
+                    return True, validation_data
+                else:
+                    logger.warning("No in-app purchases found in receipt")
+                    return False, {'error': 'No purchases found in receipt'}
+            else:
+                error_msg = self._get_apple_status_message(validation_result['status'])
+                logger.warning(f"Apple receipt validation failed: status={validation_result['status']} - {error_msg}")
+                return False, {'error': error_msg}
+
+        except Exception as e:
+            logger.error(f"iOS receipt validation error: {e}")
+            return False, {'error': str(e)}
+
     def validate_ios_purchase(self, receipt_data: str, transaction_id: str) -> Tuple[bool, Dict]:
         """
         Validate iOS in-app purchase receipt with Apple App Store
-        
+
         Returns:
             Tuple[bool, Dict]: (is_valid, validation_data)
         """
         try:
             logger.info(f"Validating iOS purchase: transaction_id={transaction_id}")
-            
+
             # Prepare receipt data
             receipt_payload = {
                 "receipt-data": receipt_data,
                 "password": self.apple_shared_secret,
                 "exclude-old-transactions": True
             }
-            
+
             # Try production first, then sandbox
             validation_result = self._validate_with_apple(receipt_payload, production=True)
-            
+
             if validation_result['status'] == 21007:  # Sandbox receipt sent to production
                 logger.info("Sandbox receipt detected, retrying with sandbox URL")
                 validation_result = self._validate_with_apple(receipt_payload, production=False)
-            
+
             if validation_result['status'] == 0:  # Success
                 # Extract relevant purchase information
                 receipt_info = validation_result.get('receipt', {})
                 in_app_purchases = receipt_info.get('in_app', [])
-                
+
                 # Find the specific transaction
                 target_transaction = None
                 for purchase in in_app_purchases:
                     if purchase.get('transaction_id') == transaction_id:
                         target_transaction = purchase
                         break
-                
+
                 if target_transaction:
                     validation_data = {
                         'transaction_id': target_transaction.get('transaction_id'),
@@ -72,7 +153,7 @@ class PurchaseValidationService:
                         'bundle_id': receipt_info.get('bundle_id'),
                         'application_version': receipt_info.get('application_version')
                     }
-                    
+
                     logger.info(f"iOS purchase validated successfully: {target_transaction.get('product_id')}")
                     return True, validation_data
                 else:
@@ -81,7 +162,7 @@ class PurchaseValidationService:
             else:
                 logger.warning(f"Apple receipt validation failed: status={validation_result['status']}")
                 return False, {'error': f"Apple validation failed: {validation_result.get('status')}"}
-                
+
         except Exception as e:
             logger.error(f"iOS purchase validation error: {e}")
             return False, {'error': str(e)}
@@ -239,27 +320,44 @@ class PurchaseValidationService:
             # TODO(context7): Implement Google service account authentication
             # This requires the Google Auth library and service account JSON
             # For now, return None to indicate authentication not configured
-            
+
             if not self.google_service_account_key:
                 logger.warning("Google service account key not configured")
                 return None
-            
+
             # from google.auth.transport.requests import Request
             # from google.oauth2 import service_account
-            # 
+            #
             # credentials = service_account.Credentials.from_service_account_info(
             #     self.google_service_account_key,
             #     scopes=['https://www.googleapis.com/auth/androidpublisher']
             # )
             # credentials.refresh(Request())
             # return credentials.token
-            
+
             logger.warning("Google Play validation not fully implemented")
             return None
-            
+
         except Exception as e:
             logger.error(f"Failed to get Google Play access token: {e}")
             return None
+
+    def _get_apple_status_message(self, status_code: int) -> str:
+        """Get human-readable message for Apple receipt validation status codes"""
+        status_messages = {
+            0: "Valid receipt",
+            21000: "The App Store could not read the JSON object you provided",
+            21002: "The data in the receipt-data property was malformed or missing",
+            21003: "The receipt could not be authenticated",
+            21004: "The shared secret you provided does not match the shared secret on file",
+            21005: "The receipt server is not currently available",
+            21006: "This receipt is valid but the subscription has expired",
+            21007: "This receipt is from the test environment (sandbox)",
+            21008: "This receipt is from the production environment",
+            21009: "Internal data access error",
+            21010: "The user account cannot be found or has been deleted"
+        }
+        return status_messages.get(status_code, f"Unknown status code: {status_code}")
     
     def get_validation_summary(self, validations: list) -> Dict:
         """Get summary of validation results"""

@@ -121,6 +121,19 @@
         .logo {
             font-size: 1.5rem;
             font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(89, 191, 242, 0.3);
+        }
+
+        .logo-text {
             background: linear-gradient(135deg, var(--blue-light), var(--blue-purple));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -489,7 +502,10 @@
     <!-- Navigation -->
     <nav>
         <div class="nav-container">
-            <div class="logo">🧠 Braindumpster</div>
+            <div class="logo">
+                <img src="/static/images/app-icon.png" alt="Braindumpster" class="logo-icon">
+                <span class="logo-text">Braindumpster</span>
+            </div>
             <div class="nav-links">
                 <a href="#features">Features</a>
                 <a href="#pricing">Pricing</a>
@@ -502,6 +518,9 @@
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <img src="/static/images/app-icon.png" alt="Braindumpster App" style="width: 120px; height: 120px; border-radius: 28px; box-shadow: 0 20px 60px rgba(89, 191, 242, 0.4); animation: float 3s ease-in-out infinite;">
+            </div>
             <h1>Turn Brain Dumps<br>Into Smart Tasks</h1>
             <p class="subtitle">
                 Speak or type your chaotic thoughts. Our AI instantly transforms them into organized, actionable tasks.

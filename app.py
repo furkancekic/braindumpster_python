@@ -270,11 +270,15 @@ def create_app(config_name=None):
     # Web interface routes
     @app.route('/')
     def index():
-        return render_template('chat.html')
-    
+        return render_template('landing.html')
+
     @app.route('/dashboard')
     def dashboard():
         return render_template('dashboard.html')
+
+    @app.route('/chat')
+    def chat():
+        return render_template('chat.html')
     
     # Health check for Flutter
     @app.route('/api/health', methods=['GET'])

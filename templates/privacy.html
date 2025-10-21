@@ -54,6 +54,16 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            flex-shrink: 0;
         }
 
         .container {
@@ -158,7 +168,10 @@
 <body>
     <nav>
         <div class="nav-container">
-            <a href="/" class="logo">🧠 Braindumpster</a>
+            <a href="/" class="logo">
+                <img src="/static/images/app-icon.png" alt="Braindumpster" class="logo-icon">
+                Braindumpster
+            </a>
             <a href="/" style="color: #A0A0A0; font-weight: 500;">Back to Home</a>
         </div>
     </nav>

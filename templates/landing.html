@@ -1,658 +1,182 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Braindumpster - AI-Powered Brain Dump to Smart Tasks</title>
-    <meta name="description" content="Transform your chaotic thoughts into organized tasks with AI. Voice or text - we make sense of your brain dumps instantly.">
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="Braindumpster - AI Brain Dump to Tasks">
-    <meta property="og:description" content="Transform chaotic thoughts into organized tasks with AI">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://braindumpster.io">
-
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-
+    <title>Braindumpster - AI Görev Yöneticisi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            /* App colors - matching iOS gradient */
-            --blue-light: #59BFF2;      /* RGB(89, 191, 242) = 0.35, 0.75, 0.95 */
-            --blue-purple: #738DF2;     /* RGB(115, 141, 242) = 0.45, 0.55, 0.95 */
-            --gold: #FFD700;
-            --gold-dark: #FFA500;
-            --bg-dark: #0A0A0A;
-            --bg-card: #1A1A1A;
-            --text-primary: #FFFFFF;
-            --text-secondary: #A0A0A0;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-primary);
-            overflow-x: hidden;
-            line-height: 1.6;
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Animated Gradient Background */
         .gradient-bg {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: linear-gradient(135deg, #0A0A0A 0%, #1A0A2E 50%, #0A0A0A 100%);
-            animation: gradientShift 15s ease infinite;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        @keyframes gradientShift {
-            0%, 100% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
-        .gradient-orb {
-            position: absolute;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.3;
-            animation: float 20s ease-in-out infinite;
-        }
-
-        .orb-1 {
-            width: 500px;
-            height: 500px;
-            background: var(--blue-light);
-            top: -250px;
-            right: -250px;
-            animation-delay: 0s;
-        }
-
-        .orb-2 {
-            width: 400px;
-            height: 400px;
-            background: var(--blue-purple);
-            bottom: -200px;
-            left: -200px;
-            animation-delay: 5s;
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
         }
 
         @keyframes float {
-            0%, 100% { transform: translate(0, 0) scale(1); }
-            33% { transform: translate(30px, -30px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
         }
 
-        /* Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            width: 100%;
-            padding: 1.5rem 2rem;
-            background: rgba(10, 10, 10, 0.8);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(89, 191, 242, 0.1);
-            z-index: 1000;
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
         }
 
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--blue-light), var(--blue-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            margin-left: 2rem;
-            font-weight: 500;
-            transition: color 0.3s;
-        }
-
-        .nav-links a:hover {
-            color: var(--text-primary);
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 8rem 2rem 4rem;
-        }
-
-        .hero-content {
-            max-width: 900px;
-            animation: fadeInUp 1s ease;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .hero h1 {
-            font-size: 4.5rem;
-            font-weight: 900;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #FFFFFF 0%, var(--blue-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero .subtitle {
-            font-size: 1.5rem;
-            color: var(--text-secondary);
-            margin-bottom: 3rem;
-            font-weight: 400;
-        }
-
-        .cta-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 1rem 2.5rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            border-radius: 12px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-block;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--blue-light), var(--blue-purple));
-            color: white;
-            box-shadow: 0 10px 30px rgba(89, 191, 242, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(89, 191, 242, 0.6);
-        }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
-        }
-
-        /* App Preview */
-        .app-preview {
-            margin-top: 4rem;
-            animation: fadeInUp 1s ease 0.3s backwards;
-        }
-
-        .app-preview img {
-            max-width: 100%;
-            border-radius: 20px;
-            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
-        }
-
-        /* Features Section */
-        .features {
-            padding: 8rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 5rem;
-        }
-
-        .section-header h2 {
-            font-size: 3rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, #FFFFFF 0%, var(--blue-light) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .section-header p {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 2rem;
-        }
-
-        .feature-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(89, 191, 242, 0.2);
-            border-radius: 20px;
-            padding: 2.5rem;
-            transition: all 0.3s;
-            backdrop-filter: blur(10px);
-        }
-
-        .feature-card:hover {
-            transform: translateY(-5px);
-            border-color: rgba(89, 191, 242, 0.5);
-            box-shadow: 0 20px 40px rgba(89, 191, 242, 0.2);
-        }
-
-        .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 1.5rem;
-        }
-
-        .feature-card h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .feature-card p {
-            color: var(--text-secondary);
-            line-height: 1.7;
-        }
-
-        /* Pricing Section */
-        .pricing {
-            padding: 8rem 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-top: 4rem;
-        }
-
-        .pricing-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 2px solid rgba(89, 191, 242, 0.2);
-            border-radius: 24px;
-            padding: 3rem 2rem;
-            text-align: center;
-            transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .pricing-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: linear-gradient(90deg, var(--blue-light), var(--blue-purple));
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .pricing-card:hover {
-            transform: translateY(-10px);
-            border-color: rgba(89, 191, 242, 0.5);
-            box-shadow: 0 30px 60px rgba(89, 191, 242, 0.3);
-        }
-
-        .pricing-card:hover::before {
-            opacity: 1;
-        }
-
-        .pricing-card.featured {
-            background: linear-gradient(135deg, rgba(89, 191, 242, 0.1), rgba(115, 141, 242, 0.1));
-            border-color: var(--blue-light);
-            transform: scale(1.05);
-        }
-
-        .pricing-badge {
-            display: inline-block;
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--bg-dark);
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .pricing-card h3 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .pricing-price {
-            font-size: 3rem;
-            font-weight: 900;
-            margin-bottom: 0.5rem;
-        }
-
-        .pricing-price span {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-            font-weight: 400;
-        }
-
-        .pricing-save {
-            color: var(--gold);
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 2rem;
-            display: block;
-        }
-
-        .pricing-features {
-            list-style: none;
-            margin: 2rem 0;
-            text-align: left;
-        }
-
-        .pricing-features li {
-            padding: 0.75rem 0;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-        }
-
-        .pricing-features li::before {
-            content: '✓';
-            color: var(--blue-light);
-            font-weight: 900;
-            margin-right: 0.75rem;
-            font-size: 1.2rem;
-        }
-
-        /* Footer */
-        footer {
-            background: rgba(0, 0, 0, 0.5);
-            border-top: 1px solid rgba(89, 191, 242, 0.1);
-            padding: 4rem 2rem 2rem;
-            text-align: center;
-        }
-
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .footer-links a:hover {
-            color: var(--text-primary);
-        }
-
-        .copyright {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .hero .subtitle {
-                font-size: 1.2rem;
-            }
-
-            .section-header h2 {
-                font-size: 2rem;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .pricing-card.featured {
-                transform: scale(1);
-            }
-        }
-
-        /* Scroll animations */
-        .fade-in {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.8s ease;
-        }
-
-        .fade-in.visible {
-            opacity: 1;
-            transform: translateY(0);
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>
-<body>
-    <!-- Animated Background -->
-    <div class="gradient-bg">
-        <div class="gradient-orb orb-1"></div>
-        <div class="gradient-orb orb-2"></div>
-    </div>
-
-    <!-- Navigation -->
-    <nav>
-        <div class="nav-container">
-            <div class="logo">🧠 Braindumpster</div>
-            <div class="nav-links">
-                <a href="#features">Features</a>
-                <a href="#pricing">Pricing</a>
-                <a href="/legal/privacy">Privacy</a>
-                <a href="/legal/terms">Terms</a>
+<body class="gradient-bg min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-4xl w-full">
+        <!-- Ana Kart -->
+        <div class="glass-effect rounded-3xl shadow-2xl p-8 md:p-12 text-white">
+            <!-- Logo ve Başlık -->
+            <div class="text-center mb-8">
+                <div class="inline-block animate-float mb-4">
+                    <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center text-5xl">
+                        🧠
+                    </div>
+                </div>
+                <h1 class="text-4xl md:text-6xl font-bold mb-4">
+                    Braindumpster
+                </h1>
+                <p class="text-xl md:text-2xl font-light opacity-90">
+                    AI destekli akıllı görev yönetimi
+                </p>
             </div>
-        </div>
-    </nav>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <h1>Turn Brain Dumps<br>Into Smart Tasks</h1>
-            <p class="subtitle">
-                Speak or type your chaotic thoughts. Our AI instantly transforms them into organized, actionable tasks.
-            </p>
-            <div class="cta-buttons">
-                <a href="#" class="btn btn-primary">Download on App Store</a>
-                <a href="#features" class="btn btn-secondary">See How It Works</a>
-            </div>
-            <div class="app-preview">
-                <div style="text-align: center; padding: 4rem; background: rgba(255,255,255,0.05); border-radius: 20px;">
-                    <p style="color: var(--text-secondary); font-size: 1.1rem;">📱 App Screenshot Coming Soon</p>
+            <!-- Özellikler -->
+            <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="text-center p-6 bg-white/10 rounded-xl">
+                    <div class="text-4xl mb-3">🤖</div>
+                    <h3 class="font-semibold mb-2">Yapay Zeka</h3>
+                    <p class="text-sm opacity-80">Gemini ile güçlendirilmiş akıllı görev analizi</p>
+                </div>
+                <div class="text-center p-6 bg-white/10 rounded-xl">
+                    <div class="text-4xl mb-3">📱</div>
+                    <h3 class="font-semibold mb-2">Mobil Uyumlu</h3>
+                    <p class="text-sm opacity-80">iOS ve Android için optimize edilmiş</p>
+                </div>
+                <div class="text-center p-6 bg-white/10 rounded-xl">
+                    <div class="text-4xl mb-3">🔔</div>
+                    <h3 class="font-semibold mb-2">Akıllı Bildirimler</h3>
+                    <p class="text-sm opacity-80">Zamanında hatırlatmalar ve push bildirimleri</p>
                 </div>
             </div>
-        </div>
-    </section>
 
-    <!-- Features Section -->
-    <section id="features" class="features fade-in">
-        <div class="section-header">
-            <h2>Powered by AI, Built for You</h2>
-            <p>Everything you need to capture and organize your thoughts effortlessly</p>
-        </div>
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon">🎤</div>
-                <h3>Voice to Task</h3>
-                <p>Just speak your mind. Our AI converts your voice into perfectly formatted tasks in seconds.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🤖</div>
-                <h3>AI Task Extraction</h3>
-                <p>Advanced AI understands context and extracts actionable tasks from your messy brain dumps automatically.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🎯</div>
-                <h3>Smart Categories</h3>
-                <p>Tasks are automatically categorized. Work, personal, urgent - everything organized without lifting a finger.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🔔</div>
-                <h3>Smart Reminders</h3>
-                <p>Never miss a deadline. Get intelligent notifications at the perfect time.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">🌍</div>
-                <h3>Multi-Language</h3>
-                <p>Works in multiple languages. Think in your language, get tasks in your language.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon">☁️</div>
-                <h3>Cloud Sync</h3>
-                <p>Your tasks sync across all devices instantly. Access anywhere, anytime.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Pricing Section -->
-    <section id="pricing" class="pricing fade-in">
-        <div class="section-header">
-            <h2>Simple, Transparent Pricing</h2>
-            <p>Choose the plan that works best for you</p>
-        </div>
-        <div class="pricing-grid">
-            <div class="pricing-card">
-                <h3>Monthly</h3>
-                <div class="pricing-price">$4.99<span>/month</span></div>
-                <ul class="pricing-features">
-                    <li>Unlimited brain dumps</li>
-                    <li>AI task extraction</li>
-                    <li>Smart categorization</li>
-                    <li>Voice input</li>
-                    <li>Cloud sync</li>
-                    <li>Smart reminders</li>
-                </ul>
-                <a href="#" class="btn btn-secondary" style="width: 100%;">Get Started</a>
+            <!-- Durum Bilgisi -->
+            <div class="bg-white/10 rounded-xl p-6 mb-8">
+                <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="status-dot"></div>
+                        <span class="font-semibold">API Durumu:</span>
+                        <span class="opacity-90" id="api-status">Kontrol ediliyor...</span>
+                    </div>
+                    <div class="text-sm opacity-75" id="api-timestamp">
+                        <!-- Timestamp buraya gelecek -->
+                    </div>
+                </div>
+                <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                        <div class="opacity-75">Firebase</div>
+                        <div class="font-semibold" id="firebase-status">...</div>
+                    </div>
+                    <div>
+                        <div class="opacity-75">Gemini AI</div>
+                        <div class="font-semibold" id="gemini-status">...</div>
+                    </div>
+                    <div>
+                        <div class="opacity-75">Bildirimler</div>
+                        <div class="font-semibold" id="notifications-status">...</div>
+                    </div>
+                    <div>
+                        <div class="opacity-75">Zamanlayıcı</div>
+                        <div class="font-semibold" id="scheduler-status">...</div>
+                    </div>
+                </div>
             </div>
 
-            <div class="pricing-card featured">
-                <div class="pricing-badge">BEST VALUE</div>
-                <h3>Yearly</h3>
-                <div class="pricing-price">$29.99<span>/year</span></div>
-                <span class="pricing-save">Save 40% - Just $2.49/mo</span>
-                <ul class="pricing-features">
-                    <li>Everything in Monthly</li>
-                    <li>Priority support</li>
-                    <li>Early access to features</li>
-                    <li>Premium AI models</li>
-                    <li>Advanced analytics</li>
-                    <li>Export to all formats</li>
-                </ul>
-                <a href="#" class="btn btn-primary" style="width: 100%;">Get Started</a>
+            <!-- CTA Butonları -->
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="/dashboard" class="bg-white text-purple-600 px-8 py-4 rounded-xl font-semibold text-center hover:bg-opacity-90 transition shadow-lg">
+                    Dashboard'a Git
+                </a>
+                <a href="/api/health" class="bg-white/20 px-8 py-4 rounded-xl font-semibold text-center hover:bg-white/30 transition border border-white/30">
+                    API Health Check
+                </a>
             </div>
 
-            <div class="pricing-card">
-                <div class="pricing-badge" style="background: linear-gradient(135deg, var(--blue-light), var(--blue-purple));">LIFETIME</div>
-                <h3>Lifetime</h3>
-                <div class="pricing-price">$99.99<span> once</span></div>
-                <span class="pricing-save">Pay once, use forever</span>
-                <ul class="pricing-features">
-                    <li>Everything in Yearly</li>
-                    <li>Lifetime updates</li>
-                    <li>VIP support</li>
-                    <li>Exclusive features</li>
-                    <li>No recurring fees</li>
-                    <li>Best long-term value</li>
-                </ul>
-                <a href="#" class="btn btn-secondary" style="width: 100%;">Get Started</a>
+            <!-- Footer -->
+            <div class="text-center mt-8 pt-8 border-t border-white/20">
+                <p class="text-sm opacity-75">
+                    braindumpster.io • 2025
+                </p>
             </div>
         </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-        <div class="footer-links">
-            <a href="/legal/privacy">Privacy Policy</a>
-            <a href="/legal/terms">Terms of Service</a>
-            <a href="mailto:support@braindumpster.io">Contact</a>
-            <a href="/account-deletion">Delete Account</a>
-        </div>
-        <div class="copyright">
-            © 2025 Braindumpster. All rights reserved.
-        </div>
-    </footer>
+    </div>
 
     <script>
-        // Scroll animations
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -100px 0px'
-        };
+        // Health check API'yi çağır
+        async function checkHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
+                document.getElementById('api-status').textContent = data.status === 'healthy' ? '✅ Çalışıyor' : '⚠️ ' + data.status;
+
+                if (data.timestamp) {
+                    const date = new Date(data.timestamp);
+                    document.getElementById('api-timestamp').textContent = date.toLocaleString('tr-TR');
                 }
-            });
-        }, observerOptions);
 
-        document.querySelectorAll('.fade-in').forEach(el => {
-            observer.observe(el);
-        });
+                // Servis durumlarını güncelle
+                if (data.services) {
+                    const statusEmoji = {
+                        'connected': '✅',
+                        'running': '✅',
+                        'disconnected': '⏸️',
+                        'stopped': '⏸️',
+                        'error': '❌',
+                        'unhealthy': '❌'
+                    };
 
-        // Smooth scroll
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
+                    document.getElementById('firebase-status').textContent =
+                        (statusEmoji[data.services.firebase] || '❓') + ' ' + data.services.firebase;
+                    document.getElementById('gemini-status').textContent =
+                        (statusEmoji[data.services.gemini] || '❓') + ' ' + data.services.gemini;
+                    document.getElementById('notifications-status').textContent =
+                        (statusEmoji[data.services.notifications] || '❓') + ' ' + data.services.notifications;
+                    document.getElementById('scheduler-status').textContent =
+                        (statusEmoji[data.services.scheduler] || '❓') + ' ' + data.services.scheduler;
                 }
-            });
-        });
+            } catch (error) {
+                document.getElementById('api-status').textContent = '❌ Bağlantı hatası';
+                console.error('Health check failed:', error);
+            }
+        }
+
+        // Sayfa yüklendiğinde ve her 30 saniyede bir health check yap
+        checkHealth();
+        setInterval(checkHealth, 30000);
     </script>
 </body>
 </html>

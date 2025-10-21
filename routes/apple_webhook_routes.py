@@ -438,3 +438,14 @@ def update_subscription_renewal_status(original_transaction_id, will_renew):
 
     except Exception as e:
         logger.error(f"❌ [Webhook] Failed to update renewal status: {e}")
+
+
+@apple_webhook_bp.route('/test', methods=['GET'])
+def test_webhook():
+    """Test endpoint to verify webhook is accessible"""
+    return jsonify({
+        "status": "ok",
+        "message": "Apple webhook endpoint is accessible",
+        "endpoint": "/api/webhooks/apple",
+        "timestamp": datetime.utcnow().isoformat()
+    }), 200

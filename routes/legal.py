@@ -1,4 +1,4 @@
-from flask import Blueprint, send_file, abort, request, jsonify
+from flask import Blueprint, send_file, abort, request, jsonify, render_template
 import os
 import logging
 from pathlib import Path
@@ -18,6 +18,21 @@ def get_content_path():
     current_dir = Path(__file__).parent.parent  # braindumpster_python
     project_root = current_dir.parent  # project root
     return project_root / "content"
+
+@legal_bp.route('/<document_type>')
+def serve_legal_document_default(document_type):
+    """Serve legal documents as HTML pages"""
+    if document_type not in SUPPORTED_DOCUMENTS:
+        abort(404)
+
+    # Render HTML template
+    try:
+        return render_template(f'{document_type}.html')
+    except Exception as e:
+        logger = get_logger()
+        logger.error(f"Error rendering {document_type}.html: {e}")
+        # Fallback to JSON API
+        return serve_legal_document('en', document_type)
 
 @legal_bp.route('/<locale>/<document_type>')
 def serve_legal_document(locale, document_type):

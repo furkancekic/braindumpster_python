@@ -67,6 +67,15 @@ def delete_account():
             conversation.reference.delete()
             conversation_count += 1
 
+        # Delete user subscriptions
+        subscriptions_ref = firebase_service.db.collection('subscriptions').where('user_id', '==', user_id)
+        subscriptions = subscriptions_ref.stream()
+
+        subscription_count = 0
+        for subscription in subscriptions:
+            subscription.reference.delete()
+            subscription_count += 1
+
         # Delete user document
         firebase_service.db.collection('users').document(user_id).delete()
 
@@ -85,6 +94,7 @@ def delete_account():
             "deleted": {
                 "tasks": task_count,
                 "conversations": conversation_count,
+                "subscriptions": subscription_count,
                 "user": True
             }
         }), 200

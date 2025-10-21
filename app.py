@@ -15,6 +15,7 @@ from routes.subscriptions import subscriptions_bp
 from routes.legal import legal_bp
 from routes.account_deletion import account_deletion_bp
 from routes.users import users_bp
+from routes.apple_webhook_routes import apple_webhook_bp
 import logging
 import sys
 import os
@@ -173,6 +174,7 @@ def create_app(config_name=None):
     app.register_blueprint(audio_storage_bp, url_prefix='/api/audio')
     app.register_blueprint(subscriptions_bp, url_prefix='/api/subscriptions')
     app.register_blueprint(users_bp, url_prefix='/api/users')
+    app.register_blueprint(apple_webhook_bp)  # Apple webhook (already has /api/webhooks prefix)
     app.register_blueprint(legal_bp, url_prefix='/legal')
     app.register_blueprint(account_deletion_bp)
     logger.info("✅ All blueprints registered successfully")

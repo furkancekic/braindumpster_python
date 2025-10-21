@@ -22,6 +22,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
         * {
             margin: 0;
@@ -299,8 +302,30 @@
         }
 
         .feature-icon {
-            font-size: 3rem;
-            margin-bottom: 1.5rem;
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(89, 191, 242, 0.1), rgba(115, 141, 242, 0.1));
+            border-radius: 16px;
+            border: 1px solid rgba(89, 191, 242, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover .feature-icon {
+            background: linear-gradient(135deg, rgba(89, 191, 242, 0.2), rgba(115, 141, 242, 0.2));
+            border-color: rgba(89, 191, 242, 0.4);
+            transform: scale(1.05);
+        }
+
+        .feature-icon svg {
+            width: 32px;
+            height: 32px;
+            stroke: var(--blue-light);
+            stroke-width: 2;
         }
 
         .feature-card h3 {
@@ -530,8 +555,9 @@
                 <a href="#features" class="btn btn-secondary">See How It Works</a>
             </div>
             <div class="app-preview">
-                <div style="text-align: center; padding: 4rem; background: rgba(255,255,255,0.05); border-radius: 20px;">
-                    <p style="color: var(--text-secondary); font-size: 1.1rem;">📱 App Screenshot Coming Soon</p>
+                <div style="text-align: center; padding: 4rem; background: rgba(255,255,255,0.05); border-radius: 20px; display: flex; align-items: center; justify-content: center; gap: 1rem;">
+                    <i data-lucide="smartphone" style="width: 48px; height: 48px; stroke: var(--blue-light); stroke-width: 2;"></i>
+                    <p style="color: var(--text-secondary); font-size: 1.1rem;">App Screenshot Coming Soon</p>
                 </div>
             </div>
         </div>
@@ -545,32 +571,44 @@
         </div>
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">🎤</div>
+                <div class="feature-icon">
+                    <i data-lucide="mic"></i>
+                </div>
                 <h3>Voice to Task</h3>
                 <p>Just speak your mind. Our AI converts your voice into perfectly formatted tasks in seconds.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🤖</div>
+                <div class="feature-icon">
+                    <i data-lucide="sparkles"></i>
+                </div>
                 <h3>AI Task Extraction</h3>
                 <p>Advanced AI understands context and extracts actionable tasks from your messy brain dumps automatically.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🎯</div>
+                <div class="feature-icon">
+                    <i data-lucide="layout-grid"></i>
+                </div>
                 <h3>Smart Categories</h3>
                 <p>Tasks are automatically categorized. Work, personal, urgent - everything organized without lifting a finger.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🔔</div>
+                <div class="feature-icon">
+                    <i data-lucide="bell"></i>
+                </div>
                 <h3>Smart Reminders</h3>
                 <p>Never miss a deadline. Get intelligent notifications at the perfect time.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">🌍</div>
+                <div class="feature-icon">
+                    <i data-lucide="globe"></i>
+                </div>
                 <h3>Multi-Language</h3>
                 <p>Works in multiple languages. Think in your language, get tasks in your language.</p>
             </div>
             <div class="feature-card">
-                <div class="feature-icon">☁️</div>
+                <div class="feature-icon">
+                    <i data-lucide="cloud"></i>
+                </div>
                 <h3>Cloud Sync</h3>
                 <p>Your tasks sync across all devices instantly. Access anywhere, anytime.</p>
             </div>
@@ -646,6 +684,9 @@
     </footer>
 
     <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
         // Scroll animations
         const observerOptions = {
             threshold: 0.1,

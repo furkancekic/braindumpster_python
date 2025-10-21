@@ -25,10 +25,9 @@
         }
 
         :root {
-            --purple-600: #8B5CF6;
-            --purple-700: #7C3AED;
-            --purple-800: #6D28D9;
-            --purple-900: #5B21B6;
+            /* App colors - matching iOS gradient */
+            --blue-light: #59BFF2;      /* RGB(89, 191, 242) = 0.35, 0.75, 0.95 */
+            --blue-purple: #738DF2;     /* RGB(115, 141, 242) = 0.45, 0.55, 0.95 */
             --gold: #FFD700;
             --gold-dark: #FFA500;
             --bg-dark: #0A0A0A;
@@ -73,7 +72,7 @@
         .orb-1 {
             width: 500px;
             height: 500px;
-            background: var(--purple-700);
+            background: var(--blue-light);
             top: -250px;
             right: -250px;
             animation-delay: 0s;
@@ -82,7 +81,7 @@
         .orb-2 {
             width: 400px;
             height: 400px;
-            background: var(--purple-900);
+            background: var(--blue-purple);
             bottom: -200px;
             left: -200px;
             animation-delay: 5s;
@@ -102,7 +101,7 @@
             padding: 1.5rem 2rem;
             background: rgba(10, 10, 10, 0.8);
             backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(139, 92, 246, 0.1);
+            border-bottom: 1px solid rgba(89, 191, 242, 0.1);
             z-index: 1000;
         }
 
@@ -117,7 +116,7 @@
         .logo {
             font-size: 1.5rem;
             font-weight: 800;
-            background: linear-gradient(135deg, var(--purple-600), var(--purple-800));
+            background: linear-gradient(135deg, var(--blue-light), var(--blue-purple));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -166,7 +165,7 @@
             font-weight: 900;
             line-height: 1.1;
             margin-bottom: 1.5rem;
-            background: linear-gradient(135deg, #FFFFFF 0%, var(--purple-600) 100%);
+            background: linear-gradient(135deg, #FFFFFF 0%, var(--blue-light) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -199,14 +198,14 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--purple-600), var(--purple-800));
+            background: linear-gradient(135deg, var(--blue-light), var(--blue-purple));
             color: white;
-            box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+            box-shadow: 0 10px 30px rgba(89, 191, 242, 0.4);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 15px 40px rgba(139, 92, 246, 0.6);
+            box-shadow: 0 15px 40px rgba(89, 191, 242, 0.6);
         }
 
         .btn-secondary {
@@ -249,7 +248,7 @@
             font-size: 3rem;
             font-weight: 800;
             margin-bottom: 1rem;
-            background: linear-gradient(135deg, #FFFFFF 0%, var(--purple-600) 100%);
+            background: linear-gradient(135deg, #FFFFFF 0%, var(--blue-light) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -268,7 +267,7 @@
 
         .feature-card {
             background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(139, 92, 246, 0.2);
+            border: 1px solid rgba(89, 191, 242, 0.2);
             border-radius: 20px;
             padding: 2.5rem;
             transition: all 0.3s;
@@ -277,8 +276,8 @@
 
         .feature-card:hover {
             transform: translateY(-5px);
-            border-color: rgba(139, 92, 246, 0.5);
-            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.2);
+            border-color: rgba(89, 191, 242, 0.5);
+            box-shadow: 0 20px 40px rgba(89, 191, 242, 0.2);
         }
 
         .feature-icon {
@@ -313,7 +312,7 @@
 
         .pricing-card {
             background: rgba(255, 255, 255, 0.03);
-            border: 2px solid rgba(139, 92, 246, 0.2);
+            border: 2px solid rgba(89, 191, 242, 0.2);
             border-radius: 24px;
             padding: 3rem 2rem;
             text-align: center;
@@ -329,15 +328,15 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: linear-gradient(90deg, var(--purple-600), var(--purple-800));
+            background: linear-gradient(90deg, var(--blue-light), var(--blue-purple));
             opacity: 0;
             transition: opacity 0.3s;
         }
 
         .pricing-card:hover {
             transform: translateY(-10px);
-            border-color: rgba(139, 92, 246, 0.5);
-            box-shadow: 0 30px 60px rgba(139, 92, 246, 0.3);
+            border-color: rgba(89, 191, 242, 0.5);
+            box-shadow: 0 30px 60px rgba(89, 191, 242, 0.3);
         }
 
         .pricing-card:hover::before {
@@ -345,8 +344,8 @@
         }
 
         .pricing-card.featured {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(124, 58, 237, 0.1));
-            border-color: var(--purple-600);
+            background: linear-gradient(135deg, rgba(89, 191, 242, 0.1), rgba(115, 141, 242, 0.1));
+            border-color: var(--blue-light);
             transform: scale(1.05);
         }
 
@@ -402,7 +401,7 @@
 
         .pricing-features li::before {
             content: '✓';
-            color: var(--purple-600);
+            color: var(--blue-light);
             font-weight: 900;
             margin-right: 0.75rem;
             font-size: 1.2rem;
@@ -411,7 +410,7 @@
         /* Footer */
         footer {
             background: rgba(0, 0, 0, 0.5);
-            border-top: 1px solid rgba(139, 92, 246, 0.1);
+            border-top: 1px solid rgba(89, 191, 242, 0.1);
             padding: 4rem 2rem 2rem;
             text-align: center;
         }
@@ -592,7 +591,7 @@
             </div>
 
             <div class="pricing-card">
-                <div class="pricing-badge" style="background: linear-gradient(135deg, var(--purple-600), var(--purple-800));">LIFETIME</div>
+                <div class="pricing-badge" style="background: linear-gradient(135deg, var(--blue-light), var(--blue-purple));">LIFETIME</div>
                 <h3>Lifetime</h3>
                 <div class="pricing-price">$99.99<span> once</span></div>
                 <span class="pricing-save">Pay once, use forever</span>

@@ -84,3 +84,4 @@ celerybeat.pid
 
 # System
 Thumbs.db
+.env.production

@@ -70,8 +70,8 @@ class ProductionConfig(Config):
     ENABLE_RATELIMIT = os.environ.get('ENABLE_RATELIMIT', 'false').lower() == 'true'
     RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL', 'memory://')
 
-    # CORS settings for production - validation moved to validate_config function
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', '*').split(',')
+    # CORS settings for production - braindumpster.io domain
+    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'https://braindumpster.io,https://api.braindumpster.io,https://www.braindumpster.io').split(',')
     
     # API settings
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max file upload
@@ -131,9 +131,10 @@ def validate_config(config_class):
             if not os.environ.get('SECRET_KEY'):
                 errors.append("SECRET_KEY environment variable is required in production mode")
 
-            cors_origins = os.environ.get('CORS_ORIGINS')
-            if not cors_origins or cors_origins == '*':
-                errors.append("CORS_ORIGINS environment variable must be set to explicit origins in production mode (not '*')")
+            # CORS validation - allow default braindumpster.io domains or custom
+            cors_origins = os.environ.get('CORS_ORIGINS', 'https://braindumpster.io')
+            if cors_origins == '*':
+                errors.append("CORS_ORIGINS cannot be '*' in production mode. Use explicit domains.")
 
     # Check Firebase service account file (only if it should exist)
     firebase_path = config_class.FIREBASE_SERVICE_ACCOUNT_PATH

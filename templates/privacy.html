@@ -49,14 +49,10 @@
         .logo {
             font-size: 1.3rem;
             font-weight: 800;
-            background: linear-gradient(135deg, #59BFF2, #738DF2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-decoration: none;
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            text-decoration: none;
         }
 
         .logo-icon {
@@ -64,6 +60,13 @@
             height: 32px;
             border-radius: 8px;
             flex-shrink: 0;
+        }
+
+        .logo-text {
+            background: linear-gradient(135deg, #59BFF2, #738DF2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
 
         .container {
@@ -88,6 +91,10 @@
             font-size: 0.95rem;
         }
 
+        .section {
+            margin-bottom: 2.5rem;
+        }
+
         h2 {
             font-size: 1.8rem;
             font-weight: 700;
@@ -96,20 +103,12 @@
             color: #59BFF2;
         }
 
-        h3 {
-            font-size: 1.3rem;
-            font-weight: 600;
-            margin-top: 2rem;
-            margin-bottom: 0.8rem;
-            color: #738DF2;
-        }
-
         p {
             margin-bottom: 1.2rem;
             color: #D0D0D0;
         }
 
-        ul, ol {
+        ul {
             margin-left: 1.5rem;
             margin-bottom: 1.2rem;
             color: #D0D0D0;
@@ -132,14 +131,6 @@
 
         a:hover {
             color: #738DF2;
-        }
-
-        .highlight-box {
-            background: rgba(89, 191, 242, 0.1);
-            border-left: 4px solid #59BFF2;
-            padding: 1.5rem;
-            margin: 2rem 0;
-            border-radius: 8px;
         }
 
         footer {
@@ -170,7 +161,7 @@
         <div class="nav-container">
             <a href="/" class="logo">
                 <img src="/static/images/app-icon.png" alt="Braindumpster" class="logo-icon">
-                Braindumpster
+                <span class="logo-text">Braindumpster</span>
             </a>
             <a href="/" style="color: #A0A0A0; font-weight: 500;">Back to Home</a>
         </div>
@@ -180,134 +171,112 @@
         <h1>Privacy Policy</h1>
         <p class="last-updated">Last Updated: October 21, 2025</p>
 
-        <p>Welcome to Braindumpster! Your privacy is important to us. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application.</p>
-
-        <div class="highlight-box">
-            <strong>TL;DR:</strong> We collect minimal data (email, name, tasks), use Firebase for secure storage, never sell your data, and you can delete your account anytime.
+        <div class="section">
+            <h2>Introduction</h2>
+            <p>Welcome to Braindumpster. We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, and safeguard your information when you use our task management application.</p>
         </div>
 
-        <h2>1. Information We Collect</h2>
+        <div class="section">
+            <h2>Information We Collect</h2>
+            <p>We collect information that you provide directly to us:</p>
+            <ul>
+                <li><strong>Account Information:</strong> Name, email address, and authentication credentials</li>
+                <li><strong>Task Data:</strong> Tasks, reminders, and notes you create</li>
+                <li><strong>Usage Information:</strong> How you interact with our app</li>
+                <li><strong>Device Information:</strong> Device type, operating system, and unique identifiers</li>
+                <li><strong>Push Notification Tokens:</strong> For sending task reminders</li>
+            </ul>
+        </div>
 
-        <h3>1.1 Information You Provide</h3>
-        <ul>
-            <li><strong>Account Information:</strong> Email address, name, and profile information</li>
-            <li><strong>Brain Dumps & Tasks:</strong> Your voice recordings, text entries, and generated tasks</li>
-            <li><strong>User Preferences:</strong> App settings and notification preferences</li>
-        </ul>
+        <div class="section">
+            <h2>How We Use Your Information</h2>
+            <p>We use your information to:</p>
+            <ul>
+                <li>Provide and maintain our services</li>
+                <li>Send you task reminders and notifications</li>
+                <li>Improve and personalize your experience</li>
+                <li>Communicate with you about updates and changes</li>
+                <li>Ensure the security and integrity of our services</li>
+                <li>Comply with legal obligations</li>
+            </ul>
+        </div>
 
-        <h3>1.2 Automatically Collected Information</h3>
-        <ul>
-            <li><strong>Device Information:</strong> Device type, operating system version, unique device identifiers</li>
-            <li><strong>Usage Data:</strong> App features used, crash reports, and performance metrics</li>
-            <li><strong>Voice Data:</strong> Audio recordings when you use voice input (processed and deleted after conversion)</li>
-        </ul>
+        <div class="section">
+            <h2>AI-Powered Features</h2>
+            <p>Braindumpster uses AI (Google Gemini) to help you create tasks from voice input. When you use voice features:</p>
+            <ul>
+                <li>Your voice recordings are processed to convert speech to text</li>
+                <li>The text is sent to Google Gemini to intelligently create tasks</li>
+                <li>Audio files are temporarily stored and then deleted after processing</li>
+                <li>No voice recordings are permanently stored on our servers</li>
+            </ul>
+        </div>
 
-        <h2>2. How We Use Your Information</h2>
+        <div class="section">
+            <h2>Data Storage and Security</h2>
+            <p>Your data is stored securely using:</p>
+            <ul>
+                <li>Firebase Authentication for secure login</li>
+                <li>Firebase Firestore for encrypted data storage</li>
+                <li>Industry-standard encryption (HTTPS/TLS)</li>
+                <li>Regular security audits and updates</li>
+            </ul>
+            <p>We implement appropriate technical and organizational measures to protect your personal data against unauthorized access, alteration, disclosure, or destruction.</p>
+        </div>
 
-        <p>We use your information to:</p>
-        <ul>
-            <li>Provide and maintain our AI-powered task extraction service</li>
-            <li>Process voice and text brain dumps into organized tasks</li>
-            <li>Send you smart reminders and notifications</li>
-            <li>Sync your data across devices</li>
-            <li>Improve our AI models and app features</li>
-            <li>Provide customer support</li>
-            <li>Detect and prevent fraud or abuse</li>
-        </ul>
+        <div class="section">
+            <h2>Third-Party Services</h2>
+            <p>We use the following third-party services:</p>
+            <ul>
+                <li><strong>Firebase (Google):</strong> Authentication and data storage</li>
+                <li><strong>Google Gemini AI:</strong> Voice processing and task creation</li>
+                <li><strong>Apple Push Notification Service:</strong> iOS notifications</li>
+                <li><strong>Google Sign-In:</strong> OAuth authentication</li>
+                <li><strong>Sign in with Apple:</strong> OAuth authentication</li>
+            </ul>
+            <p>These services have their own privacy policies and may collect data as described in their respective policies.</p>
+        </div>
 
-        <h2>3. AI & Voice Processing</h2>
+        <div class="section">
+            <h2>Your Rights</h2>
+            <p>You have the right to:</p>
+            <ul>
+                <li>Access your personal data</li>
+                <li>Correct inaccurate data</li>
+                <li>Request deletion of your data</li>
+                <li>Export your data</li>
+                <li>Opt-out of notifications</li>
+                <li>Withdraw consent at any time</li>
+            </ul>
+            <p>To exercise these rights, please contact us through the app's support section or email us.</p>
+        </div>
 
-        <p>When you use voice input:</p>
-        <ul>
-            <li>Audio is sent to Google Gemini AI for speech-to-text conversion</li>
-            <li>The audio is processed in real-time and <strong>not permanently stored</strong></li>
-            <li>Only the transcribed text and extracted tasks are saved</li>
-            <li>All AI processing is encrypted in transit</li>
-        </ul>
+        <div class="section">
+            <h2>Data Retention</h2>
+            <p>We retain your data for as long as your account is active. When you delete your account:</p>
+            <ul>
+                <li>All personal data is permanently deleted within 30 days</li>
+                <li>Task data and reminders are removed from our servers</li>
+                <li>Backup copies are purged during the next scheduled cycle</li>
+                <li>Anonymous analytics data may be retained for service improvement</li>
+            </ul>
+        </div>
 
-        <h2>4. Data Storage & Security</h2>
+        <div class="section">
+            <h2>Children's Privacy</h2>
+            <p>Braindumpster is not intended for children under 16 years of age. We do not knowingly collect personal information from children. If you believe we have collected information from a child, please contact us immediately.</p>
+        </div>
 
-        <p>We use industry-standard security measures:</p>
-        <ul>
-            <li><strong>Firebase:</strong> All data stored on Google Cloud Platform with enterprise-grade security</li>
-            <li><strong>Encryption:</strong> Data encrypted in transit (HTTPS/TLS) and at rest</li>
-            <li><strong>Authentication:</strong> Firebase Authentication with secure token-based access</li>
-            <li><strong>No Third-Party Selling:</strong> We never sell your data to third parties</li>
-        </ul>
+        <div class="section">
+            <h2>Changes to This Policy</h2>
+            <p>We may update this privacy policy from time to time. We will notify you of any changes by posting the new policy in the app and updating the "Last updated" date.</p>
+        </div>
 
-        <h2>5. Data Sharing</h2>
-
-        <p>We share your information only with:</p>
-        <ul>
-            <li><strong>Service Providers:</strong> Google Cloud (Firebase), Google Gemini AI - only as necessary to provide services</li>
-            <li><strong>Legal Requirements:</strong> When required by law or to protect rights and safety</li>
-            <li><strong>With Your Consent:</strong> Any other sharing requires your explicit permission</li>
-        </ul>
-
-        <p><strong>We do NOT:</strong></p>
-        <ul>
-            <li>Sell your data to advertisers or data brokers</li>
-            <li>Share your tasks or brain dumps with other users</li>
-            <li>Use your data for targeted advertising</li>
-        </ul>
-
-        <h2>6. Your Rights & Choices</h2>
-
-        <p>You have the right to:</p>
-        <ul>
-            <li><strong>Access Your Data:</strong> View all your stored information in the app</li>
-            <li><strong>Update Information:</strong> Edit your profile and preferences anytime</li>
-            <li><strong>Delete Your Account:</strong> Permanently delete your account and all data from Settings</li>
-            <li><strong>Export Data:</strong> Request a copy of your data (contact support)</li>
-            <li><strong>Opt-Out of Notifications:</strong> Disable push notifications in Settings</li>
-        </ul>
-
-        <h2>7. Account Deletion</h2>
-
-        <p>You can delete your account at any time from the app:</p>
-        <ol>
-            <li>Go to <strong>Settings</strong></li>
-            <li>Scroll to <strong>Danger Zone</strong></li>
-            <li>Tap <strong>Delete Account</strong></li>
-            <li>Confirm deletion</li>
-        </ol>
-
-        <p>When you delete your account:</p>
-        <ul>
-            <li>All tasks, brain dumps, and conversations are permanently deleted</li>
-            <li>Your subscription data is removed</li>
-            <li>Your authentication account is deleted</li>
-            <li>This action is <strong>irreversible</strong></li>
-        </ul>
-
-        <h2>8. Children's Privacy</h2>
-
-        <p>Braindumpster is not intended for children under 13. We do not knowingly collect information from children under 13. If you believe we have collected data from a child, please contact us immediately.</p>
-
-        <h2>9. International Data Transfers</h2>
-
-        <p>Your data may be transferred to and stored on servers located outside your country. We ensure appropriate safeguards are in place to protect your data in accordance with this Privacy Policy.</p>
-
-        <h2>10. Changes to This Policy</h2>
-
-        <p>We may update this Privacy Policy from time to time. We will notify you of significant changes via:</p>
-        <ul>
-            <li>In-app notification</li>
-            <li>Email to your registered address</li>
-            <li>Updated "Last Updated" date on this page</li>
-        </ul>
-
-        <h2>11. Contact Us</h2>
-
-        <p>If you have questions or concerns about this Privacy Policy, please contact us:</p>
-
-        <ul>
-            <li><strong>Email:</strong> <a href="mailto:support@braindumpster.io">support@braindumpster.io</a></li>
-            <li><strong>Website:</strong> <a href="https://braindumpster.io">https://braindumpster.io</a></li>
-        </ul>
-
-        <div class="highlight-box">
-            <strong>Your Trust Matters:</strong> We're committed to transparency and protecting your privacy. If you have any questions, we're here to help.
+        <div class="section">
+            <h2>Contact Us</h2>
+            <p>If you have any questions about this Privacy Policy, please contact us:</p>
+            <p><strong>Email:</strong> <a href="mailto:furkancekic46@icloud.com">furkancekic46@icloud.com</a></p>
+            <p>We will respond to your inquiries within 30 days.</p>
         </div>
     </div>
 

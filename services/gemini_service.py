@@ -1037,3 +1037,60 @@ Please transcribe this audio recording to text. Return only the transcribed text
                     "reasoning": "Consider adjusting reminder times to improve effectiveness"
                 }
                 validated_response["suggestions"].append(conflict_detail)
+
+    def analyze_audio_recording(self, audio_data: bytes, duration: int, current_date: str):
+        """
+        Analyze audio recording for meetings/lectures using Gemini
+        """
+        self.logger.info(f"🎤 Analyzing audio recording - {len(audio_data)} bytes, {duration}s")
+
+        try:
+            from prompts.gemini_prompts import MEETING_ANALYSIS_PROMPT
+            import base64
+
+            # Create prompt
+            prompt = MEETING_ANALYSIS_PROMPT.format(
+                current_date=current_date,
+                duration=duration
+            )
+
+            self.logger.info("🤖 Sending audio to Gemini for analysis...")
+
+            # Upload audio to Gemini
+            audio_part = {
+                "inline_data": {
+                    "mime_type": "audio/mp3",
+                    "data": base64.b64encode(audio_data).decode("utf-8")
+                }
+            }
+
+            # Call Gemini API
+            response = self.model.generate_content([prompt, audio_part])
+            response_text = response.text.strip()
+            
+            # Extract JSON
+            analysis_json = self._extract_json_from_response(response_text)
+
+            if not analysis_json:
+                return {"success": False, "error": "Invalid response format"}
+
+            return {"success": True, "analysis": analysis_json}
+
+        except Exception as e:
+            self.logger.error(f"❌ Error analyzing recording: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def chat_about_recording(self, prompt: str, user_message: str):
+        """Chat with AI about a recording"""
+        try:
+            full_prompt = f"{prompt}
+
+User Question: {user_message}
+
+Your Answer:"
+            response = self.model.generate_content(full_prompt)
+            return {"success": True, "response": response.text.strip()}
+        except Exception as e:
+            self.logger.error(f"❌ Error in chat: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+

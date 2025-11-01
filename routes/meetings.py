@@ -124,8 +124,15 @@ def analyze_recording():
         }), 200
 
     except Exception as e:
-        logger.error(f"❌ Error analyzing recording: {str(e)}", exc_info=True)
-        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"❌ Error analyzing recording: {str(e)}")
+        logger.error(f"Full traceback:\n{error_details}")
+        return jsonify({
+            'error': 'Internal server error',
+            'details': str(e),
+            'traceback': error_details
+        }), 500
 
 
 @meetings_bp.route('', methods=['GET'])

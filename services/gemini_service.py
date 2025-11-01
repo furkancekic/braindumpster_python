@@ -242,6 +242,22 @@ CRITICAL RULES FOR DUPLICATE DETECTION:
 - If a task already exists for the same time period and similar activity, DO NOT create a new task
 - Instead, set query_type to "duplicate_found" and include the existing task details in a special "existing_task" field
 
+SUGGESTIONS REQUIREMENT:
+- ALWAYS provide at least 1-3 helpful suggestions in EVERY response
+- Suggestions help users optimize their tasks and workflow
+- Types of suggestions to provide:
+  * "optimization" - Ways to make the task more efficient or effective
+  * "alternative" - Alternative approaches or methods
+  * "additional" - Related tasks or considerations they might have missed
+  * "information" - Helpful context, tips, or warnings
+- Examples:
+  * For a workout task → Suggest warmup routine, hydration reminder, rest days
+  * For a study task → Suggest break intervals, resource materials, review schedule
+  * For a work task → Suggest time blocking, eliminating distractions, deadlines
+  * For any task → Suggest related habits, complementary activities, potential obstacles
+- Even for simple tasks, provide at least one helpful suggestion
+- Make suggestions specific and actionable, not generic
+
 Return your response in the following JSON format:
 
 ```json

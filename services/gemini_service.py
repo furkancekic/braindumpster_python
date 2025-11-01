@@ -1057,9 +1057,10 @@ Please transcribe this audio recording to text. Return only the transcribed text
             self.logger.info("🤖 Sending audio to Gemini for analysis...")
 
             # Upload audio to Gemini
+            # Support both m4a (iOS) and mp3 formats
             audio_part = {
                 "inline_data": {
-                    "mime_type": "audio/mp3",
+                    "mime_type": "audio/mp4",  # m4a is actually audio/mp4 MIME type
                     "data": base64.b64encode(audio_data).decode("utf-8")
                 }
             }

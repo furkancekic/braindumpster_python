@@ -3,44 +3,20 @@ Meeting Recorder Routes
 Handles audio recording analysis, storage, and chat functionality for meetings/lectures
 """
 
-from flask import Blueprint, request, jsonify
-from functools import wraps
+from flask import Blueprint, request, jsonify, current_app
 import logging
 from datetime import datetime
 import os
 import json
 import re
 
-from services.firebase_service import FirebaseService
-from services.gemini_service import GeminiService
+from utils.auth import require_auth
 from prompts.gemini_prompts import MEETING_ANALYSIS_PROMPT, MEETING_CHAT_PROMPT
 
-# Initialize services
-firebase_service = FirebaseService()
-gemini_service = GeminiService()
 logger = logging.getLogger(__name__)
 
 # Create blueprint
 meetings_bp = Blueprint('meetings', __name__, url_prefix='/api/meetings')
-
-# Auth decorator (same as in other routes)
-def require_auth(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return jsonify({'error': 'Missing or invalid authorization header'}), 401
-
-        token = auth_header.split('Bearer ')[1]
-        user_id = firebase_service.verify_token(token)
-
-        if not user_id:
-            return jsonify({'error': 'Invalid or expired token'}), 401
-
-        request.user_id = user_id
-        return f(*args, **kwargs)
-
-    return decorated_function
 
 
 @meetings_bp.route('/analyze', methods=['POST'])
@@ -51,6 +27,10 @@ def analyze_recording():
     Expects multipart/form-data with audio file
     """
     try:
+        # Get services from app context
+        firebase_service = current_app.firebase_service
+        gemini_service = current_app.gemini_service
+
         user_id = request.user_id
         logger.info(f"📊 Starting recording analysis for user: {user_id}")
 
@@ -145,6 +125,8 @@ def get_recordings():
     - limit: max number of recordings (default 50)
     """
     try:
+        firebase_service = current_app.firebase_service
+
         user_id = request.user_id
         recording_type = request.args.get('type')
         limit = int(request.args.get('limit', 50))
@@ -173,6 +155,8 @@ def get_recording(recording_id):
     Get a single recording by ID
     """
     try:
+        firebase_service = current_app.firebase_service
+
         user_id = request.user_id
         logger.info(f"📄 Fetching recording: {recording_id} for user: {user_id}")
 
@@ -198,6 +182,8 @@ def delete_recording(recording_id):
     Delete a recording
     """
     try:
+        firebase_service = current_app.firebase_service
+
         user_id = request.user_id
         logger.info(f"🗑️ Deleting recording: {recording_id} for user: {user_id}")
 
@@ -229,6 +215,9 @@ def chat_with_recording(recording_id):
     Expects JSON: { "message": "question" }
     """
     try:
+        firebase_service = current_app.firebase_service
+        gemini_service = current_app.gemini_service
+
         user_id = request.user_id
         data = request.get_json()
 

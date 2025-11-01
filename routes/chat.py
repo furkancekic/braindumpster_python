@@ -167,6 +167,15 @@ def send_message():
         logger.info("🤖 Generating AI response with Gemini...")
         ai_response = gemini_service.generate_tasks_from_message(message, user_context)
         logger.info(f"✅ AI response generated: {len(ai_response.get('tasks', []))} tasks found")
+
+        # Log suggestions for debugging
+        suggestions = ai_response.get('suggestions', [])
+        logger.info(f"💡 Suggestions in response: {len(suggestions)}")
+        if suggestions:
+            for idx, suggestion in enumerate(suggestions):
+                logger.info(f"   💡 Suggestion {idx+1}: {suggestion.get('title', 'No title')} ({suggestion.get('type', 'unknown')})")
+        else:
+            logger.warning("⚠️ No suggestions returned by Gemini for text message")
         
         # Extract detected language for localization
         detected_language = ai_response.get('detected_language', 'en')
@@ -452,6 +461,15 @@ def send_audio_message():
                 logger.info("🤖 Processing audio with Gemini...")
                 ai_response = gemini_service.generate_tasks_from_audio(audio_path, user_context)
                 logger.info(f"✅ Audio processed: {len(ai_response.get('tasks', []))} tasks found")
+
+                # Log suggestions for debugging
+                suggestions = ai_response.get('suggestions', [])
+                logger.info(f"💡 Suggestions in audio response: {len(suggestions)}")
+                if suggestions:
+                    for idx, suggestion in enumerate(suggestions):
+                        logger.info(f"   💡 Suggestion {idx+1}: {suggestion.get('title', 'No title')} ({suggestion.get('type', 'unknown')})")
+                else:
+                    logger.warning("⚠️ No suggestions returned by Gemini for audio message")
                 
                 # Extract detected language for localization
                 detected_language = ai_response.get('detected_language', 'en')

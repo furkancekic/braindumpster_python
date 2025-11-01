@@ -198,13 +198,18 @@ class FirebaseService:
             for doc in docs:
                 task_data = doc.to_dict()
                 task_data['id'] = doc.id
-                
+
+                # Filter out archived tasks (soft deleted after 30 days)
+                if task_data.get('archived', False):
+                    self.logger.debug(f"🗄️ Filtering out archived task: {task_data.get('title', 'Unknown')}")
+                    continue
+
                 # Filter out deleted tasks unless specifically requested
                 if status is None or (isinstance(status, list) and 'deleted' not in status) or (isinstance(status, str) and status != 'deleted'):
                     if task_data.get('status') == 'deleted':
                         self.logger.debug(f"🗑️ Filtering out deleted task: {task_data.get('title', 'Unknown')}")
                         continue
-                
+
                 tasks.append(task_data)
                 self.logger.debug(f"✅ Task {doc.id}: {task_data.get('title', 'Unknown')}")
             

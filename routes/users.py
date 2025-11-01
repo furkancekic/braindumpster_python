@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify, current_app
 from functools import wraps
 
-users_bp = Blueprint('users', __name__, url_prefix='/users')
+users_bp = Blueprint('users', __name__)
 
 def require_auth(f):
     """Decorator to require authentication for endpoints"""

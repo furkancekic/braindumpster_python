@@ -8,7 +8,7 @@ from services.gemini_service import GeminiService
 from services.notification_service import NotificationService
 from services.scheduler_service import SchedulerService
 from services.localization_service import LocalizationService
-from routes import auth_bp, chat_bp, tasks_bp, users_bp
+from routes import auth_bp, chat_bp, tasks_bp, users_bp, apple_webhook_bp
 from routes.notifications import notifications_bp, init_notification_services
 from routes.audio_storage import audio_storage_bp
 from routes.subscriptions import subscriptions_bp
@@ -172,6 +172,7 @@ def create_app(config_name=None):
     app.register_blueprint(audio_storage_bp, url_prefix='/api/audio')
     app.register_blueprint(subscriptions_bp, url_prefix='/api/subscriptions')
     app.register_blueprint(users_bp, url_prefix='/api/users')
+    app.register_blueprint(apple_webhook_bp)  # Already has url_prefix='/api/webhooks'
     app.register_blueprint(legal_bp, url_prefix='/legal')
     app.register_blueprint(account_deletion_bp)
     logger.info("✅ All blueprints registered successfully")

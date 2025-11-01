@@ -1084,11 +1084,11 @@ Please transcribe this audio recording to text. Return only the transcribed text
     def chat_about_recording(self, prompt: str, user_message: str):
         """Chat with AI about a recording"""
         try:
-            full_prompt = f"{prompt}
+            full_prompt = f"""{prompt}
 
 User Question: {user_message}
 
-Your Answer:"
+Your Answer:"""
             response = self.model.generate_content(full_prompt)
             return {"success": True, "response": response.text.strip()}
         except Exception as e:

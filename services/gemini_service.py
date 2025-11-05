@@ -1081,6 +1081,41 @@ Please transcribe this audio recording to text. Return only the transcribed text
             self.logger.error(f"❌ Error analyzing recording: {str(e)}", exc_info=True)
             return {"success": False, "error": str(e)}
 
+    def _extract_json_from_response(self, response_text: str):
+        """
+        Extract JSON from Gemini response
+        Handles both ```json ... ``` blocks and raw JSON
+        """
+        import re
+        import json
+
+        try:
+            # Try to find JSON in code block
+            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
+
+            if json_match:
+                self.logger.debug("✅ Found JSON block in response")
+                json_str = json_match.group(1).strip()
+                parsed_data = json.loads(json_str)
+                self.logger.debug(f"✅ Successfully parsed JSON from code block")
+                return parsed_data
+
+            # If no JSON block found, try to parse the entire response as JSON
+            self.logger.debug("🔄 No JSON block found, trying to parse entire response...")
+            cleaned_response = response_text.strip()
+            parsed_data = json.loads(cleaned_response)
+            self.logger.debug(f"✅ Successfully parsed entire response as JSON")
+            return parsed_data
+
+        except json.JSONDecodeError as e:
+            self.logger.error(f"❌ JSON parsing failed: {str(e)}")
+            self.logger.debug(f"📝 Raw response that failed to parse: {response_text[:500]}...")
+            return None
+
+        except Exception as e:
+            self.logger.error(f"❌ Error extracting JSON: {str(e)}")
+            return None
+
     def chat_about_recording(self, prompt: str, user_message: str):
         """Chat with AI about a recording"""
         try:

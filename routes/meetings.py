@@ -73,6 +73,17 @@ def analyze_recording():
         # Use UTC time with timezone for iOS compatibility (ISO8601 with Z suffix)
         from datetime import timezone
         now = datetime.now(timezone.utc).replace(microsecond=0)
+
+        # Ensure summary has required fields for iOS
+        summary = analysis.get('summary', {})
+        if not summary or not summary.get('brief'):
+            # Provide default summary if Gemini didn't return one
+            summary = {
+                'brief': 'Recording analyzed',
+                'detailed': 'Audio recording has been processed and analyzed.',
+                'keyTakeaways': []
+            }
+
         recording_data = {
             'userId': user_id,
             'title': metadata.get('suggestedTitle', 'Untitled Recording'),
@@ -81,7 +92,7 @@ def analyze_recording():
             'type': metadata.get('detectedType', 'personal'),
             'aiDetected': metadata.get('confidence', 0) > 0.7,
             'language': metadata.get('language', 'en'),
-            'summary': analysis.get('summary', {}),
+            'summary': summary,
             'sentiment': analysis.get('sentiment'),
             'transcript': analysis.get('transcript', []),
             'actionItems': analysis.get('actionItems', []),
@@ -95,10 +106,16 @@ def analyze_recording():
         }
 
         # Save recording to Firestore
+        logger.info(f"📝 Saving recording to Firestore...")
+        logger.info(f"   Summary: {summary.get('brief', 'N/A')[:50]}")
+        logger.info(f"   Key Points: {len(recording_data.get('keyPoints', []))}")
+        logger.info(f"   Transcript: {len(recording_data.get('transcript', []))} segments")
+
         recording_id = firebase_service.save_recording(recording_data)
         recording_data['id'] = recording_id
 
         logger.info(f"💾 Recording saved with ID: {recording_id}")
+        logger.info(f"📤 Sending response to iOS...")
 
         return jsonify({
             'success': True,

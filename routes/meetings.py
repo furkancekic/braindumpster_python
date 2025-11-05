@@ -70,10 +70,12 @@ def analyze_recording():
         logger.info(f"✅ Analysis complete. Type: {metadata.get('detectedType')}, Title: {metadata.get('suggestedTitle')}")
 
         # Save to Firestore
+        # Use replace(microsecond=0) to make dates iOS-compatible (no microseconds)
+        now = datetime.now().replace(microsecond=0)
         recording_data = {
             'userId': user_id,
             'title': metadata.get('suggestedTitle', 'Untitled Recording'),
-            'date': datetime.now().isoformat(),
+            'date': now.isoformat(),
             'duration': duration,
             'type': metadata.get('detectedType', 'personal'),
             'aiDetected': metadata.get('confidence', 0) > 0.7,
@@ -87,8 +89,8 @@ def analyze_recording():
             'topics': analysis.get('topics', []),
             'questions': analysis.get('questions', []),
             'nextSteps': analysis.get('nextSteps', []),
-            'createdAt': datetime.now().isoformat(),
-            'updatedAt': datetime.now().isoformat()
+            'createdAt': now.isoformat(),
+            'updatedAt': now.isoformat()
         }
 
         # Save recording to Firestore

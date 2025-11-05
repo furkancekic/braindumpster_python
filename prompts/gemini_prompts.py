@@ -261,6 +261,11 @@ CRITICAL RULES:
 3. Use double quotes only, no trailing commas.
 4. Base analysis ONLY on recording content - no speculation.
 5. If information is not in recording, use null or empty arrays.
+6. MUST RETURN VALID JSON EVEN IF:
+   - Audio has no speech/conversation
+   - Audio is just noise, music, or silence
+   - Cannot detect language or content
+   - In these cases: Return the JSON structure with empty arrays and "No content detected" messages
 
 Context:
 - Date: {current_date}

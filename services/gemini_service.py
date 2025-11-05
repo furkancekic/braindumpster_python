@@ -1068,18 +1068,50 @@ Please transcribe this audio recording to text. Return only the transcribed text
             # Call Gemini API
             response = self.model.generate_content([prompt, audio_part])
             response_text = response.text.strip()
-            
+
+            self.logger.debug(f"🤖 Gemini response (first 500 chars): {response_text[:500]}")
+
             # Extract JSON
             analysis_json = self._extract_json_from_response(response_text)
 
             if not analysis_json:
-                return {"success": False, "error": "Invalid response format"}
+                self.logger.warning("⚠️ Gemini returned invalid JSON, using fallback structure")
+                # Return a valid fallback structure
+                analysis_json = self._create_fallback_analysis(duration, current_date)
 
             return {"success": True, "analysis": analysis_json}
 
         except Exception as e:
             self.logger.error(f"❌ Error analyzing recording: {str(e)}", exc_info=True)
             return {"success": False, "error": str(e)}
+
+    def _create_fallback_analysis(self, duration: int, current_date: str):
+        """
+        Create a fallback analysis structure when Gemini fails to return valid JSON
+        Returns a valid but empty structure that iOS can parse
+        """
+        return {
+            "metadata": {
+                "detectedType": "personal",
+                "suggestedTitle": f"Recording - {current_date}",
+                "language": "en",
+                "speakerCount": 0,
+                "confidence": 0.0
+            },
+            "summary": {
+                "brief": "Audio recording could not be analyzed. The recording may not contain speech or the content is unclear.",
+                "detailed": "The AI was unable to extract meaningful content from this audio recording. This may happen if the recording contains only music, noise, or no clear speech. Please try recording again with clear audio.",
+                "keyTakeaways": ["Recording could not be analyzed"]
+            },
+            "transcript": [],
+            "actionItems": [],
+            "decisions": [],
+            "keyPoints": [],
+            "sentiment": None,
+            "topics": [],
+            "questions": [],
+            "nextSteps": []
+        }
 
     def _extract_json_from_response(self, response_text: str):
         """

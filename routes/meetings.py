@@ -46,7 +46,29 @@ def analyze_recording():
         audio_data = audio_file.read()
         duration = int(request.form.get('duration', 0))  # Duration in seconds
 
-        logger.info(f"🎤 Processing audio file: {audio_file.filename}, duration: {duration}s")
+        # Check file size
+        file_size_mb = len(audio_data) / (1024 * 1024)
+        if file_size_mb > 150:
+            logger.warning(f"⚠️ File too large: {file_size_mb:.2f} MB")
+            return jsonify({
+                'error': 'File too large',
+                'details': f'Audio file is {file_size_mb:.1f} MB. Maximum allowed size is 150 MB.'
+            }), 413  # 413 Payload Too Large
+
+        # Detect MIME type from filename
+        filename = audio_file.filename.lower()
+        if filename.endswith('.mp3'):
+            mime_type = 'audio/mpeg'
+        elif filename.endswith('.m4a'):
+            mime_type = 'audio/mp4'
+        elif filename.endswith('.wav'):
+            mime_type = 'audio/wav'
+        elif filename.endswith('.aac'):
+            mime_type = 'audio/aac'
+        else:
+            mime_type = 'audio/mp4'  # Default to m4a
+
+        logger.info(f"🎤 Processing audio file: {audio_file.filename}, size: {file_size_mb:.2f} MB, duration: {duration}s, MIME type: {mime_type}")
 
         # Analyze with Gemini
         logger.info("🤖 Sending to Gemini for analysis...")
@@ -56,7 +78,8 @@ def analyze_recording():
         analysis_result = gemini_service.analyze_audio_recording(
             audio_data=audio_data,
             duration=duration,
-            current_date=current_date
+            current_date=current_date,
+            mime_type=mime_type
         )
 
         if not analysis_result.get('success'):

@@ -85,9 +85,14 @@ def create_app(config_name=None):
     except ValueError as e:
         logger.error(f"❌ Configuration validation failed: {e}")
         raise RuntimeError(f"Application cannot start due to configuration errors: {e}")
-    
+
     logger.info("🔧 Creating Flask application...")
-    
+
+    # Set maximum file upload size to 150MB (for long meetings/lectures)
+    # Gemini File API supports up to 2GB, so we set a reasonable limit
+    app.config['MAX_CONTENT_LENGTH'] = 150 * 1024 * 1024  # 150 MB
+    logger.info("📁 Maximum file upload size set to 150 MB")
+
     # Enable CORS for Flutter integration
     if hasattr(app.config, 'CORS_ORIGINS') and app.config['CORS_ORIGINS']:
         # Production CORS with specific origins

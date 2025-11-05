@@ -1038,15 +1038,24 @@ Please transcribe this audio recording to text. Return only the transcribed text
                 }
                 validated_response["suggestions"].append(conflict_detail)
 
-    def analyze_audio_recording(self, audio_data: bytes, duration: int, current_date: str):
+    def analyze_audio_recording(self, audio_data: bytes, duration: int, current_date: str, mime_type: str = "audio/mp4"):
         """
         Analyze audio recording for meetings/lectures using Gemini
+
+        Args:
+            audio_data: Audio file data in bytes
+            duration: Duration in seconds
+            current_date: Current date string
+            mime_type: MIME type of the audio file (audio/mpeg for MP3, audio/mp4 for M4A, etc.)
         """
-        self.logger.info(f"🎤 Analyzing audio recording - {len(audio_data)} bytes, {duration}s")
+        file_size_mb = len(audio_data) / (1024 * 1024)
+        self.logger.info(f"🎤 Analyzing audio recording - {file_size_mb:.2f} MB, {duration}s, MIME: {mime_type}")
 
         try:
             from prompts.gemini_prompts import MEETING_ANALYSIS_PROMPT
-            import base64
+            import tempfile
+            import os
+            import google.generativeai as genai
 
             # Create prompt
             prompt = MEETING_ANALYSIS_PROMPT.format(
@@ -1054,20 +1063,69 @@ Please transcribe this audio recording to text. Return only the transcribed text
                 duration=duration
             )
 
-            self.logger.info("🤖 Sending audio to Gemini for analysis...")
+            # Use Gemini File API for files larger than 10MB (more efficient than inline data)
+            if file_size_mb > 10:
+                self.logger.info(f"📁 Using Gemini File API for large file ({file_size_mb:.2f} MB)")
 
-            # Upload audio to Gemini
-            # Support both m4a (iOS) and mp3 formats
-            audio_part = {
-                "inline_data": {
-                    "mime_type": "audio/mp4",  # m4a is actually audio/mp4 MIME type
-                    "data": base64.b64encode(audio_data).decode("utf-8")
+                # Create temporary file
+                file_extension = mime_type.split('/')[-1]
+                if file_extension == 'mpeg':
+                    file_extension = 'mp3'
+                elif file_extension == 'mp4':
+                    file_extension = 'm4a'
+
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}')
+                try:
+                    # Write audio data to temp file
+                    temp_file.write(audio_data)
+                    temp_file.flush()
+                    temp_file.close()
+
+                    self.logger.info(f"📤 Uploading file to Gemini File API...")
+                    # Upload file to Gemini
+                    uploaded_file = genai.upload_file(path=temp_file.name, mime_type=mime_type)
+                    self.logger.info(f"✅ File uploaded: {uploaded_file.name}")
+
+                    # Wait for file to be processed
+                    import time
+                    while uploaded_file.state.name == "PROCESSING":
+                        self.logger.info("⏳ Waiting for file to be processed...")
+                        time.sleep(2)
+                        uploaded_file = genai.get_file(uploaded_file.name)
+
+                    if uploaded_file.state.name == "FAILED":
+                        raise Exception(f"File processing failed: {uploaded_file.state}")
+
+                    self.logger.info(f"🤖 Sending to Gemini for analysis...")
+                    # Call Gemini API with uploaded file
+                    response = self.model.generate_content([prompt, uploaded_file])
+                    response_text = response.text.strip()
+
+                    # Delete uploaded file from Gemini
+                    self.logger.info(f"🗑️ Deleting uploaded file from Gemini...")
+                    genai.delete_file(uploaded_file.name)
+
+                finally:
+                    # Clean up temp file
+                    if os.path.exists(temp_file.name):
+                        os.unlink(temp_file.name)
+                        self.logger.info(f"🗑️ Cleaned up temp file")
+
+            else:
+                # Use inline data for smaller files (< 10MB)
+                self.logger.info(f"📦 Using inline data for small file ({file_size_mb:.2f} MB)")
+                import base64
+
+                audio_part = {
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": base64.b64encode(audio_data).decode("utf-8")
+                    }
                 }
-            }
 
-            # Call Gemini API
-            response = self.model.generate_content([prompt, audio_part])
-            response_text = response.text.strip()
+                # Call Gemini API
+                response = self.model.generate_content([prompt, audio_part])
+                response_text = response.text.strip()
 
             self.logger.debug(f"🤖 Gemini response (first 500 chars): {response_text[:500]}")
 

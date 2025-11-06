@@ -1116,6 +1116,13 @@ Please transcribe this audio recording to text. Return only the transcribed text
                     self.logger.info(f"   Response type: {type(response)}")
                     self.logger.info(f"   Has text: {hasattr(response, 'text')}")
 
+                    # Check finish_reason to see why response stopped
+                    if hasattr(response, 'candidates') and response.candidates:
+                        finish_reason = response.candidates[0].finish_reason
+                        self.logger.warning(f"⚠️ Gemini finish_reason: {finish_reason}")
+                        if hasattr(response.candidates[0], 'safety_ratings'):
+                            self.logger.info(f"   Safety ratings: {response.candidates[0].safety_ratings}")
+
                     response_text = response.text.strip()
                     self.logger.info(f"📝 Response length: {len(response_text)} chars")
                     self.logger.info(f"   First 500 chars: {response_text[:500]}")

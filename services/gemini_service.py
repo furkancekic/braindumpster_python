@@ -1104,7 +1104,7 @@ Please transcribe this audio recording to text. Return only the transcribed text
                         "temperature": 0.4,  # Lower temperature for more consistent transcription
                         "top_p": 0.95,
                         "top_k": 40,
-                        # No max_output_tokens - let Gemini return as much as needed
+                        "max_output_tokens": 65536,  # High limit for long transcripts (gemini-2.0 supports up to 65k)
                     }
                     response = self.model.generate_content(
                         [prompt, uploaded_file],
@@ -1147,7 +1147,7 @@ Please transcribe this audio recording to text. Return only the transcribed text
                     "temperature": 0.4,  # Lower temperature for more consistent transcription
                     "top_p": 0.95,
                     "top_k": 40,
-                    # No max_output_tokens - let Gemini return as much as needed
+                    "max_output_tokens": 65536,  # High limit for long transcripts (gemini-2.0 supports up to 65k)
                 }
                 response = self.model.generate_content(
                     [prompt, audio_part],
@@ -1158,6 +1158,12 @@ Please transcribe this audio recording to text. Return only the transcribed text
             # Log response details for debugging
             self.logger.info(f"📝 Gemini response length: {len(response_text)} chars")
             self.logger.info(f"   First 500 chars: {response_text[:500]}")
+
+            # DEBUG: Write full response to file for inspection
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', dir='/tmp', prefix='gemini_response_') as f:
+                f.write(response_text)
+                self.logger.info(f"🔍 Full Gemini response written to: {f.name}")
 
             # Extract JSON
             analysis_json = self._extract_json_from_response(response_text)
@@ -1222,24 +1228,33 @@ Please transcribe this audio recording to text. Return only the transcribed text
                 r'```\s*json\s*(.*?)```',  # Flexible whitespace
             ]
 
+            self.logger.info(f"🔍 Trying {len(patterns)} regex patterns to extract JSON...")
+            self.logger.info(f"   Response starts with: {repr(response_text[:50])}")
+            self.logger.info(f"   Response ends with: {repr(response_text[-50:])}")
+
             for i, pattern in enumerate(patterns):
+                self.logger.info(f"   Pattern {i+1}: {pattern}")
                 json_match = re.search(pattern, response_text, re.DOTALL)
                 if json_match:
-                    self.logger.debug(f"✅ Found JSON block with pattern {i+1}")
+                    self.logger.info(f"✅ Found JSON block with pattern {i+1}")
                     json_str = json_match.group(1).strip()
-                    self.logger.debug(f"📝 Extracted JSON length: {len(json_str)} chars, first 100: {json_str[:100]}")
+                    self.logger.info(f"📝 Extracted JSON length: {len(json_str)} chars")
+                    self.logger.info(f"   First 100 chars: {json_str[:100]}")
 
                     if json_str:  # Make sure it's not empty
                         try:
                             parsed_data = json.loads(json_str)
-                            self.logger.debug(f"✅ Successfully parsed JSON from code block")
+                            self.logger.info(f"✅ Successfully parsed JSON from code block")
                             return parsed_data
                         except json.JSONDecodeError as e:
                             self.logger.warning(f"⚠️ Pattern {i+1} matched but JSON invalid: {str(e)}")
+                            self.logger.warning(f"   JSON start: {json_str[:200]}")
                             continue  # Try next pattern
                     else:
                         self.logger.warning(f"⚠️ Pattern {i+1} matched but extracted empty string")
                         continue
+                else:
+                    self.logger.info(f"   Pattern {i+1} did not match")
 
             # If no JSON block found, try to parse the entire response as JSON
             self.logger.debug("🔄 No JSON block found, trying to parse entire response...")

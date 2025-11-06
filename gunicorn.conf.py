@@ -14,7 +14,7 @@ worker_connections = 1000
 max_requests = 1000
 max_requests_jitter = 50
 preload_app = True
-timeout = 120  # Increased from 30 to handle batch operations
+timeout = 600  # 10 minutes - required for large audio file processing with Gemini API
 keepalive = 2
 
 # Logging

@@ -1104,13 +1104,21 @@ Please transcribe this audio recording to text. Return only the transcribed text
                         "temperature": 0.4,  # Lower temperature for more consistent transcription
                         "top_p": 0.95,
                         "top_k": 40,
-                        "max_output_tokens": 8192,  # Allow longer responses for detailed transcription
+                        # No max_output_tokens - let Gemini return as much as needed
                     }
                     response = self.model.generate_content(
                         [prompt, uploaded_file],
                         generation_config=generation_config
                     )
+
+                    # Log response details
+                    self.logger.info(f"✅ Gemini response received")
+                    self.logger.info(f"   Response type: {type(response)}")
+                    self.logger.info(f"   Has text: {hasattr(response, 'text')}")
+
                     response_text = response.text.strip()
+                    self.logger.info(f"📝 Response length: {len(response_text)} chars")
+                    self.logger.info(f"   First 500 chars: {response_text[:500]}")
 
                     # Delete uploaded file from Gemini
                     self.logger.info(f"🗑️ Deleting uploaded file from Gemini...")
@@ -1139,7 +1147,7 @@ Please transcribe this audio recording to text. Return only the transcribed text
                     "temperature": 0.4,  # Lower temperature for more consistent transcription
                     "top_p": 0.95,
                     "top_k": 40,
-                    "max_output_tokens": 8192,  # Allow longer responses for detailed transcription
+                    # No max_output_tokens - let Gemini return as much as needed
                 }
                 response = self.model.generate_content(
                     [prompt, audio_part],
@@ -1147,13 +1155,16 @@ Please transcribe this audio recording to text. Return only the transcribed text
                 )
                 response_text = response.text.strip()
 
-            self.logger.debug(f"🤖 Gemini response (first 500 chars): {response_text[:500]}")
+            # Log response details for debugging
+            self.logger.info(f"📝 Gemini response length: {len(response_text)} chars")
+            self.logger.info(f"   First 500 chars: {response_text[:500]}")
 
             # Extract JSON
             analysis_json = self._extract_json_from_response(response_text)
 
             if not analysis_json:
                 self.logger.warning("⚠️ Gemini returned invalid JSON, using fallback structure")
+                self.logger.warning(f"   Full response text: {response_text[:1000]}")
                 # Return a valid fallback structure
                 analysis_json = self._create_fallback_analysis(duration, current_date)
 

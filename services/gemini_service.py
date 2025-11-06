@@ -15,8 +15,8 @@ class GeminiService:
         self.logger.info("🤖 Initializing GeminiService...")
         
         genai.configure(api_key=Config.GEMINI_API_KEY)
-        # Use Gemini 1.5 Pro for better audio transcription quality
-        self.model = genai.GenerativeModel('gemini-1.5-pro-latest')
+        # Use Gemini 2.0 Flash Exp - only model that works with File API in v1beta
+        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
         
         # Connection management
         self._last_request_time = 0
@@ -93,8 +93,8 @@ class GeminiService:
         """Create a fresh model instance for connection issues"""
         try:
             self.logger.info("🔄 Creating fresh Gemini model instance...")
-            # Use Gemini 1.5 Pro for better audio transcription quality
-            self.model = genai.GenerativeModel('gemini-1.5-pro-latest')
+            # Use Gemini 2.0 Flash Exp - only model that works with File API in v1beta
+            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
             self.logger.info("✅ Fresh Gemini model created successfully")
         except Exception as e:
             self.logger.error(f"❌ Failed to create fresh Gemini model: {str(e)}")

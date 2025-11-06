@@ -15,9 +15,9 @@ class GeminiService:
         self.logger.info("🤖 Initializing GeminiService...")
         
         genai.configure(api_key=Config.GEMINI_API_KEY)
-        # Use Gemini 2.0 Flash Exp - only model that works with File API in v1beta
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        
+        # Use Gemini 2.5 Flash - supports 65,536 max output tokens (vs 8,192 for 2.0)
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
+
         # Connection management
         self._last_request_time = 0
         self._request_lock = threading.Lock()
@@ -25,8 +25,8 @@ class GeminiService:
         self._retry_delay = 1.0  # seconds
         self._request_timeout = 60.0  # seconds
         self._min_request_interval = 0.5  # seconds between requests
-        
-        self.logger.info("✅ GeminiService initialized with model: gemini-2.0-flash-exp")
+
+        self.logger.info("✅ GeminiService initialized with model: gemini-2.5-flash (65K output tokens)")
     
     def _make_request_with_retry(self, request_func, *args, **kwargs):
         """Make a request to Gemini API with retry logic and rate limiting"""

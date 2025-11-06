@@ -3,12 +3,13 @@ Meeting Recorder Routes
 Handles audio recording analysis, storage, and chat functionality for meetings/lectures
 """
 
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, jsonify, current_app, copy_current_request_context
 import logging
 from datetime import datetime
 import os
 import json
 import re
+import threading
 
 from utils.auth import require_auth
 from prompts.gemini_prompts import MEETING_ANALYSIS_PROMPT, MEETING_CHAT_PROMPT
@@ -19,20 +20,117 @@ logger = logging.getLogger(__name__)
 meetings_bp = Blueprint('meetings', __name__, url_prefix='/api/meetings')
 
 
+def _process_audio_in_background(recording_id, audio_data, duration, mime_type, user_id):
+    """
+    Background task to process audio with Gemini AI
+    This runs in a separate thread to avoid blocking the HTTP response
+    """
+    try:
+        from datetime import timezone
+        from flask import current_app
+
+        logger.info(f"🔄 Background processing started for recording: {recording_id}")
+
+        # Get services from app context
+        firebase_service = current_app.firebase_service
+        gemini_service = current_app.gemini_service
+
+        current_date = datetime.now().strftime("%B %d, %Y")
+
+        # Analyze with Gemini
+        logger.info(f"🤖 Sending to Gemini for analysis (recording: {recording_id})...")
+        analysis_result = gemini_service.analyze_audio_recording(
+            audio_data=audio_data,
+            duration=duration,
+            current_date=current_date,
+            mime_type=mime_type
+        )
+
+        if not analysis_result.get('success'):
+            logger.error(f"❌ Gemini analysis failed for recording {recording_id}: {analysis_result.get('error')}")
+            # Update recording status to failed
+            firebase_service.update_recording(recording_id, {
+                'status': 'failed',
+                'error': analysis_result.get('error', 'AI analysis failed'),
+                'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+            })
+            return
+
+        # Extract analysis
+        analysis = analysis_result.get('analysis', {})
+        metadata = analysis.get('metadata', {})
+
+        logger.info(f"✅ Analysis complete for {recording_id}. Type: {metadata.get('detectedType')}, Title: {metadata.get('suggestedTitle')}")
+
+        # Ensure summary has required fields
+        summary = analysis.get('summary', {})
+        if not summary or not summary.get('brief'):
+            summary = {
+                'brief': 'Recording analyzed',
+                'detailed': 'Audio recording has been processed and analyzed.',
+                'keyTakeaways': []
+            }
+
+        # Update recording with full analysis
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        updates = {
+            'status': 'completed',
+            'title': metadata.get('suggestedTitle', 'Untitled Recording'),
+            'type': metadata.get('detectedType', 'personal'),
+            'aiDetected': metadata.get('confidence', 0) > 0.7,
+            'language': metadata.get('language', 'en'),
+            'summary': summary,
+            'sentiment': analysis.get('sentiment'),
+            'transcript': analysis.get('transcript', []),
+            'actionItems': analysis.get('actionItems', []),
+            'keyPoints': analysis.get('keyPoints', []),
+            'decisions': analysis.get('decisions', []),
+            'topics': analysis.get('topics', []),
+            'questions': analysis.get('questions', []),
+            'nextSteps': analysis.get('nextSteps', []),
+            'updatedAt': now.isoformat().replace('+00:00', 'Z')
+        }
+
+        firebase_service.update_recording(recording_id, updates)
+
+        logger.info(f"💾 Recording {recording_id} updated with complete analysis")
+        logger.info(f"   Key Points: {len(updates.get('keyPoints', []))}")
+        logger.info(f"   Transcript: {len(updates.get('transcript', []))} segments")
+
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"❌ Error in background processing for recording {recording_id}: {str(e)}")
+        logger.error(f"Full traceback:\n{error_details}")
+
+        # Update recording status to failed
+        try:
+            firebase_service = current_app.firebase_service
+            firebase_service.update_recording(recording_id, {
+                'status': 'failed',
+                'error': str(e),
+                'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+            })
+        except Exception as update_error:
+            logger.error(f"❌ Failed to update recording status: {update_error}")
+
+
 @meetings_bp.route('/analyze', methods=['POST'])
 @require_auth
 def analyze_recording():
     """
-    Analyze an audio recording using Gemini AI
+    Analyze an audio recording using Gemini AI (ASYNC)
+    Immediately returns recording ID with status='processing'
+    Analysis happens in background and updates recording when complete
+
     Expects multipart/form-data with audio file
     """
     try:
         # Get services from app context
         firebase_service = current_app.firebase_service
-        gemini_service = current_app.gemini_service
 
         user_id = request.user_id
-        logger.info(f"📊 Starting recording analysis for user: {user_id}")
+        logger.info(f"📊 Starting async recording analysis for user: {user_id}")
 
         # Get audio file from request
         if 'audio' not in request.files:
@@ -53,7 +151,7 @@ def analyze_recording():
             return jsonify({
                 'error': 'File too large',
                 'details': f'Audio file is {file_size_mb:.1f} MB. Maximum allowed size is 150 MB.'
-            }), 413  # 413 Payload Too Large
+            }), 413
 
         # Detect MIME type from filename
         filename = audio_file.filename.lower()
@@ -68,93 +166,64 @@ def analyze_recording():
         else:
             mime_type = 'audio/mp4'  # Default to m4a
 
-        logger.info(f"🎤 Processing audio file: {audio_file.filename}, size: {file_size_mb:.2f} MB, duration: {duration}s, MIME type: {mime_type}")
+        logger.info(f"🎤 Processing audio file: {audio_file.filename}, size: {file_size_mb:.2f} MB, duration: {duration}s")
 
-        # Analyze with Gemini
-        logger.info("🤖 Sending to Gemini for analysis...")
-        current_date = datetime.now().strftime("%B %d, %Y")
-
-        # Use Gemini to analyze the audio
-        analysis_result = gemini_service.analyze_audio_recording(
-            audio_data=audio_data,
-            duration=duration,
-            current_date=current_date,
-            mime_type=mime_type
-        )
-
-        if not analysis_result.get('success'):
-            logger.error(f"❌ Gemini analysis failed: {analysis_result.get('error')}")
-            return jsonify({'error': 'AI analysis failed', 'details': analysis_result.get('error')}), 500
-
-        # Extract analysis
-        analysis = analysis_result.get('analysis', {})
-        metadata = analysis.get('metadata', {})
-
-        logger.info(f"✅ Analysis complete. Type: {metadata.get('detectedType')}, Title: {metadata.get('suggestedTitle')}")
-
-        # Save to Firestore
-        # Use UTC time with timezone for iOS compatibility (ISO8601 with Z suffix)
+        # Create initial recording with 'processing' status
         from datetime import timezone
         now = datetime.now(timezone.utc).replace(microsecond=0)
 
-        # Ensure summary has required fields for iOS
-        summary = analysis.get('summary', {})
-        if not summary or not summary.get('brief'):
-            # Provide default summary if Gemini didn't return one
-            summary = {
-                'brief': 'Recording analyzed',
-                'detailed': 'Audio recording has been processed and analyzed.',
-                'keyTakeaways': []
-            }
-
-        recording_data = {
+        initial_recording = {
             'userId': user_id,
-            'title': metadata.get('suggestedTitle', 'Untitled Recording'),
-            'date': now.isoformat().replace('+00:00', 'Z'),  # Convert +00:00 to Z
+            'title': 'Processing...',
+            'date': now.isoformat().replace('+00:00', 'Z'),
             'duration': duration,
-            'type': metadata.get('detectedType', 'personal'),
-            'aiDetected': metadata.get('confidence', 0) > 0.7,
-            'language': metadata.get('language', 'en'),
-            'summary': summary,
-            'sentiment': analysis.get('sentiment'),
-            'transcript': analysis.get('transcript', []),
-            'actionItems': analysis.get('actionItems', []),
-            'keyPoints': analysis.get('keyPoints', []),
-            'decisions': analysis.get('decisions', []),
-            'topics': analysis.get('topics', []),
-            'questions': analysis.get('questions', []),
-            'nextSteps': analysis.get('nextSteps', []),
+            'type': 'personal',
+            'status': 'processing',
+            'language': 'en',
+            'summary': {
+                'brief': 'Recording is being analyzed...',
+                'detailed': 'Please wait while we process your audio recording.',
+                'keyTakeaways': []
+            },
             'createdAt': now.isoformat().replace('+00:00', 'Z'),
             'updatedAt': now.isoformat().replace('+00:00', 'Z')
         }
 
-        # Save recording to Firestore
-        logger.info(f"📝 Saving recording to Firestore...")
-        logger.info(f"   Summary: {summary.get('brief', 'N/A')[:50]}")
-        logger.info(f"   Key Points: {len(recording_data.get('keyPoints', []))}")
-        logger.info(f"   Transcript: {len(recording_data.get('transcript', []))} segments")
+        # Save initial recording to Firestore
+        logger.info(f"📝 Saving initial recording with status='processing'...")
+        recording_id = firebase_service.save_recording(initial_recording)
+        initial_recording['id'] = recording_id
 
-        recording_id = firebase_service.save_recording(recording_data)
-        recording_data['id'] = recording_id
+        logger.info(f"💾 Recording created with ID: {recording_id}, status: processing")
 
-        logger.info(f"💾 Recording saved with ID: {recording_id}")
-        logger.info(f"📤 Sending response to iOS...")
+        # Start background processing with Flask app context
+        @copy_current_request_context
+        def process_with_context():
+            _process_audio_in_background(recording_id, audio_data, duration, mime_type, user_id)
 
+        thread = threading.Thread(target=process_with_context)
+        thread.daemon = True  # Daemon thread will be killed when main thread exits
+        thread.start()
+
+        logger.info(f"🚀 Background processing started for recording: {recording_id}")
+        logger.info(f"📤 Returning immediate response to iOS...")
+
+        # Return immediate response with processing status
         return jsonify({
             'success': True,
             'recordingId': recording_id,
-            'recording': recording_data
-        }), 200
+            'recording': initial_recording,
+            'message': 'Recording is being processed. Check status by fetching the recording.'
+        }), 202  # 202 Accepted - request accepted for processing
 
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        logger.error(f"❌ Error analyzing recording: {str(e)}")
+        logger.error(f"❌ Error in analyze_recording: {str(e)}")
         logger.error(f"Full traceback:\n{error_details}")
         return jsonify({
             'error': 'Internal server error',
-            'details': str(e),
-            'traceback': error_details
+            'details': str(e)
         }), 500
 
 

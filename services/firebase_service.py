@@ -1576,6 +1576,17 @@ class FirebaseService:
             self.logger.error(f"Error getting recording: {str(e)}")
             return None
 
+    def update_recording(self, recording_id, updates):
+        """Update a recording"""
+        try:
+            doc_ref = self.db.collection("recordings").document(recording_id)
+            doc_ref.update(updates)
+            self.logger.info(f"📝 Recording updated: {recording_id}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error updating recording: {str(e)}")
+            raise
+
     def delete_recording(self, recording_id, user_id):
         """Delete a recording"""
         try:
@@ -1583,7 +1594,7 @@ class FirebaseService:
             recording = self.get_recording(recording_id, user_id)
             if not recording:
                 raise ValueError("Recording not found or access denied")
-            
+
             self.db.collection("recordings").document(recording_id).delete()
             self.logger.info(f"🗑️ Recording deleted: {recording_id}")
             return True

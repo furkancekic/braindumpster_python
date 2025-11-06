@@ -15,7 +15,8 @@ class GeminiService:
         self.logger.info("🤖 Initializing GeminiService...")
         
         genai.configure(api_key=Config.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+        # Use Gemini 1.5 Pro for better audio transcription quality
+        self.model = genai.GenerativeModel('gemini-1.5-pro-latest')
         
         # Connection management
         self._last_request_time = 0
@@ -92,7 +93,8 @@ class GeminiService:
         """Create a fresh model instance for connection issues"""
         try:
             self.logger.info("🔄 Creating fresh Gemini model instance...")
-            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            # Use Gemini 1.5 Pro for better audio transcription quality
+            self.model = genai.GenerativeModel('gemini-1.5-pro-latest')
             self.logger.info("✅ Fresh Gemini model created successfully")
         except Exception as e:
             self.logger.error(f"❌ Failed to create fresh Gemini model: {str(e)}")
@@ -1097,8 +1099,17 @@ Please transcribe this audio recording to text. Return only the transcribed text
                         raise Exception(f"File processing failed: {uploaded_file.state}")
 
                     self.logger.info(f"🤖 Sending to Gemini for analysis...")
-                    # Call Gemini API with uploaded file
-                    response = self.model.generate_content([prompt, uploaded_file])
+                    # Call Gemini API with uploaded file and optimized config for audio
+                    generation_config = {
+                        "temperature": 0.4,  # Lower temperature for more consistent transcription
+                        "top_p": 0.95,
+                        "top_k": 40,
+                        "max_output_tokens": 8192,  # Allow longer responses for detailed transcription
+                    }
+                    response = self.model.generate_content(
+                        [prompt, uploaded_file],
+                        generation_config=generation_config
+                    )
                     response_text = response.text.strip()
 
                     # Delete uploaded file from Gemini
@@ -1123,8 +1134,17 @@ Please transcribe this audio recording to text. Return only the transcribed text
                     }
                 }
 
-                # Call Gemini API
-                response = self.model.generate_content([prompt, audio_part])
+                # Call Gemini API with optimized config for audio
+                generation_config = {
+                    "temperature": 0.4,  # Lower temperature for more consistent transcription
+                    "top_p": 0.95,
+                    "top_k": 40,
+                    "max_output_tokens": 8192,  # Allow longer responses for detailed transcription
+                }
+                response = self.model.generate_content(
+                    [prompt, audio_part],
+                    generation_config=generation_config
+                )
                 response_text = response.text.strip()
 
             self.logger.debug(f"🤖 Gemini response (first 500 chars): {response_text[:500]}")

@@ -252,12 +252,20 @@ Update the conversation context and identify key information that should be pres
 Return a JSON response with updated context information.
 """
 
-MEETING_ANALYSIS_PROMPT = """You are an AI meeting/lecture analyzer.
+MEETING_ANALYSIS_PROMPT = """You are an AI meeting/lecture analyzer with AUDIO TRANSCRIPTION capabilities.
+
+🎤 AUDIO PROCESSING INSTRUCTIONS:
+- You MUST listen to and transcribe the entire audio recording provided
+- Extract spoken words, conversations, and discussions from the audio
+- Identify different speakers and their contributions
+- Capture the audio content accurately even if it's a single person speaking
+- Transcribe the audio into text and then analyze it according to the rules below
+
 Your job is to analyze audio recordings and return comprehensive structured analysis.
 
 CRITICAL RULES:
 1. 🌍 LANGUAGE DETECTION & RESPONSE:
-   - First, detect the PRIMARY language spoken in the recording
+   - First, LISTEN to the audio and detect the PRIMARY language spoken
    - Write ALL analysis content in that EXACT language
    - If recording is in Turkish → analysis in Turkish (summary, action items, key points, etc.)
    - If recording is in English → analysis in English
@@ -268,13 +276,16 @@ CRITICAL RULES:
 
 2. Return ONLY valid JSON in markdown code blocks. No text before or after.
 3. Use double quotes only, no trailing commas.
-4. Base analysis ONLY on recording content - no speculation.
-5. If information is not in recording, use null or empty arrays.
+4. Base analysis ONLY on what you HEAR in the audio recording - no speculation.
+5. If information is not clearly stated in the audio, use null or empty arrays.
 6. MUST RETURN VALID JSON EVEN IF:
    - Audio has no speech/conversation
    - Audio is just noise, music, or silence
    - Cannot detect language or content
    - In these cases: Return the JSON structure with empty arrays and "No content detected" messages
+
+7. ⚠️ IMPORTANT: If the audio contains speech/conversation, you MUST transcribe it and provide analysis.
+   Do NOT return "No content detected" if there is actual speech in the recording.
 
 Context:
 - Date: {current_date}

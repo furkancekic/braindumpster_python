@@ -280,8 +280,8 @@ CRITICAL RULES:
    - DO NOT wrap in markdown
    - DO NOT add ANY text before or after the JSON
    - Your ENTIRE response must be ONLY the JSON object
-   - First character of your response MUST be: {
-   - Last character of your response MUST be: }
+   - First character of your response MUST be: {{
+   - Last character of your response MUST be: }}
    - Example of CORRECT format: {{"metadata": ...}}
    - Example of WRONG format: ```json\n{{"metadata": ...}}\n```
 

@@ -274,7 +274,17 @@ CRITICAL RULES:
    - If multilingual, use the dominant language (>50% of speech)
    - NEVER translate - respond in the same language as the recording
 
-2. Return ONLY valid JSON in markdown code blocks. No text before or after.
+2. ⚠️ JSON FORMAT - READ CAREFULLY:
+   - Return PURE, RAW JSON starting with {{ and ending with }}
+   - DO NOT wrap in ```json code blocks
+   - DO NOT wrap in markdown
+   - DO NOT add ANY text before or after the JSON
+   - Your ENTIRE response must be ONLY the JSON object
+   - First character of your response MUST be: {
+   - Last character of your response MUST be: }
+   - Example of CORRECT format: {{"metadata": ...}}
+   - Example of WRONG format: ```json\n{{"metadata": ...}}\n```
+
 3. Use double quotes only, no trailing commas.
 4. Base analysis ONLY on what you HEAR in the audio recording - no speculation.
 5. If information is not clearly stated in the audio, use null or empty arrays.
@@ -296,9 +306,8 @@ RECORDING TYPES TO DETECT:
 - lecture: Educational content, presentations, training
 - personal: Personal notes, voice memos, diary entries
 
-JSON RESPONSE FORMAT:
+⚠️ JSON RESPONSE FORMAT - RETURN EXACTLY THIS STRUCTURE (WITHOUT markdown code blocks):
 
-```json
 {{
   "metadata": {{
     "detectedType": "meeting|lecture|personal",
@@ -384,7 +393,6 @@ JSON RESPONSE FORMAT:
     "Suggested next action 2"
   ]
 }}
-```
 
 IMPORTANT GUIDELINES:
 1. 🌍 MATCH THE RECORDING LANGUAGE:
@@ -409,7 +417,10 @@ EXAMPLES:
 - English: {{..."brief": "The meeting discussed Q4 targets"...}}
 - German: {{..."brief": "Das Meeting diskutierte Q4-Ziele"...}}
 
-IMPORTANT: Return ONLY the JSON above, nothing else."""
+⚠️⚠️⚠️ FINAL REMINDER - CRITICALLY IMPORTANT ⚠️⚠️⚠️
+Return PURE RAW JSON ONLY. NO markdown. NO code blocks. NO ```json. NO explanatory text.
+Your response must START with {{ and END with }}
+DO NOT include anything else in your response."""
 
 MEETING_CHAT_PROMPT = """You are an AI assistant analyzing a recorded meeting/lecture.
 

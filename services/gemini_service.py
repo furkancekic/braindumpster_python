@@ -1164,7 +1164,7 @@ Please transcribe this audio recording to text. Return only the transcribed text
 
             if not analysis_json:
                 self.logger.warning("⚠️ Gemini returned invalid JSON, using fallback structure")
-                self.logger.warning(f"   Full response text: {response_text[:1000]}")
+                self.logger.warning(f"   Full response text (first 1000): {response_text[:1000]}")
                 # Return a valid fallback structure
                 analysis_json = self._create_fallback_analysis(duration, current_date)
 
@@ -1211,15 +1211,35 @@ Please transcribe this audio recording to text. Return only the transcribed text
         import json
 
         try:
-            # Try to find JSON in code block
-            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
+            # Log full response length for debugging
+            self.logger.debug(f"📏 Full response length: {len(response_text)} chars")
 
-            if json_match:
-                self.logger.debug("✅ Found JSON block in response")
-                json_str = json_match.group(1).strip()
-                parsed_data = json.loads(json_str)
-                self.logger.debug(f"✅ Successfully parsed JSON from code block")
-                return parsed_data
+            # Try multiple patterns to match JSON blocks
+            patterns = [
+                r'```json\n(.*?)\n```',  # Standard: ```json\n{...}\n```
+                r'```json\s+(.*?)\s+```',  # With whitespace
+                r'```json(.*?)```',  # No whitespace
+                r'```\s*json\s*(.*?)```',  # Flexible whitespace
+            ]
+
+            for i, pattern in enumerate(patterns):
+                json_match = re.search(pattern, response_text, re.DOTALL)
+                if json_match:
+                    self.logger.debug(f"✅ Found JSON block with pattern {i+1}")
+                    json_str = json_match.group(1).strip()
+                    self.logger.debug(f"📝 Extracted JSON length: {len(json_str)} chars, first 100: {json_str[:100]}")
+
+                    if json_str:  # Make sure it's not empty
+                        try:
+                            parsed_data = json.loads(json_str)
+                            self.logger.debug(f"✅ Successfully parsed JSON from code block")
+                            return parsed_data
+                        except json.JSONDecodeError as e:
+                            self.logger.warning(f"⚠️ Pattern {i+1} matched but JSON invalid: {str(e)}")
+                            continue  # Try next pattern
+                    else:
+                        self.logger.warning(f"⚠️ Pattern {i+1} matched but extracted empty string")
+                        continue
 
             # If no JSON block found, try to parse the entire response as JSON
             self.logger.debug("🔄 No JSON block found, trying to parse entire response...")
@@ -1230,11 +1250,13 @@ Please transcribe this audio recording to text. Return only the transcribed text
 
         except json.JSONDecodeError as e:
             self.logger.error(f"❌ JSON parsing failed: {str(e)}")
-            self.logger.debug(f"📝 Raw response that failed to parse: {response_text[:500]}...")
+            self.logger.error(f"📝 First 1000 chars of response: {response_text[:1000]}")
+            self.logger.error(f"📝 Last 500 chars of response: {response_text[-500:]}")
             return None
 
         except Exception as e:
             self.logger.error(f"❌ Error extracting JSON: {str(e)}")
+            self.logger.error(f"📝 Response preview: {response_text[:500]}")
             return None
 
     def chat_about_recording(self, prompt: str, user_message: str):

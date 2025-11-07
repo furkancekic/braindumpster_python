@@ -18,8 +18,8 @@ timeout = 600  # 10 minutes - required for large audio file processing with Gemi
 keepalive = 2
 
 # Logging
-accesslog = "-"
-errorlog = "-"
+accesslog = "logs/gunicorn_access.log"
+errorlog = "logs/gunicorn_error.log"
 loglevel = "info"
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
 

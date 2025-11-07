@@ -53,7 +53,7 @@ def _process_audio_in_background(recording_id, audio_data, duration, mime_type, 
                 'status': 'failed',
                 'error': analysis_result.get('error', 'AI analysis failed'),
                 'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-            })
+            }, user_id)
             return
 
         # Extract analysis
@@ -91,7 +91,7 @@ def _process_audio_in_background(recording_id, audio_data, duration, mime_type, 
             'updatedAt': now.isoformat().replace('+00:00', 'Z')
         }
 
-        firebase_service.update_recording(recording_id, updates)
+        firebase_service.update_recording(recording_id, updates, user_id)
 
         logger.info(f"💾 Recording {recording_id} updated with complete analysis")
         logger.info(f"   Key Points: {len(updates.get('keyPoints', []))}")
@@ -110,7 +110,7 @@ def _process_audio_in_background(recording_id, audio_data, duration, mime_type, 
                 'status': 'failed',
                 'error': str(e),
                 'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-            })
+            }, user_id)
         except Exception as update_error:
             logger.error(f"❌ Failed to update recording status: {update_error}")
 

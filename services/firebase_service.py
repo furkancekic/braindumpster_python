@@ -1523,80 +1523,84 @@ class FirebaseService:
             self.logger.error(f"❌ Error cleaning up expired subscriptions: {str(e)}")
             return 0
     def save_recording(self, recording_data):
-        """Save a meeting/lecture recording"""
+        """Save a meeting/lecture recording to users/{userId}/recordings subcollection"""
         try:
-            doc_ref = self.db.collection("recordings").document()
+            user_id = recording_data.get("userId")
+            if not user_id:
+                raise ValueError("userId is required in recording_data")
+
+            # Save to users/{userId}/recordings subcollection
+            doc_ref = self.db.collection("users").document(user_id).collection("recordings").document()
             recording_data["id"] = doc_ref.id
             doc_ref.set(recording_data)
-            self.logger.info(f"💾 Recording saved: {doc_ref.id}")
+            self.logger.info(f"💾 Recording saved: {doc_ref.id} for user: {user_id}")
             return doc_ref.id
         except Exception as e:
             self.logger.error(f"Error saving recording: {str(e)}")
             raise
 
     def get_user_recordings(self, user_id, recording_type=None, limit=50):
-        """Get all recordings for a user"""
+        """Get all recordings for a user from users/{userId}/recordings subcollection"""
         try:
-            query = self.db.collection("recordings").where("userId", "==", user_id)
-            
+            # Query from users/{userId}/recordings subcollection
+            query = self.db.collection("users").document(user_id).collection("recordings")
+
             if recording_type:
                 query = query.where("type", "==", recording_type)
-            
+
             query = query.order_by("createdAt", direction="DESCENDING").limit(limit)
-            
+
             recordings = []
             for doc in query.stream():
                 recording_data = doc.to_dict()
                 recording_data["id"] = doc.id
                 recordings.append(recording_data)
-            
+
             return recordings
         except Exception as e:
             self.logger.error(f"Error getting recordings: {str(e)}")
             return []
 
     def get_recording(self, recording_id, user_id):
-        """Get a single recording by ID"""
+        """Get a single recording by ID from users/{userId}/recordings subcollection"""
         try:
-            doc_ref = self.db.collection("recordings").document(recording_id)
+            # Get from users/{userId}/recordings subcollection
+            doc_ref = self.db.collection("users").document(user_id).collection("recordings").document(recording_id)
             doc = doc_ref.get()
-            
+
             if not doc.exists:
                 return None
-            
+
             recording_data = doc.to_dict()
-            
-            # Verify ownership
-            if recording_data.get("userId") != user_id:
-                return None
-            
             recording_data["id"] = doc.id
             return recording_data
         except Exception as e:
             self.logger.error(f"Error getting recording: {str(e)}")
             return None
 
-    def update_recording(self, recording_id, updates):
-        """Update a recording"""
+    def update_recording(self, recording_id, updates, user_id):
+        """Update a recording in users/{userId}/recordings subcollection"""
         try:
-            doc_ref = self.db.collection("recordings").document(recording_id)
+            # Update in users/{userId}/recordings subcollection
+            doc_ref = self.db.collection("users").document(user_id).collection("recordings").document(recording_id)
             doc_ref.update(updates)
-            self.logger.info(f"📝 Recording updated: {recording_id}")
+            self.logger.info(f"📝 Recording updated: {recording_id} for user: {user_id}")
             return True
         except Exception as e:
             self.logger.error(f"Error updating recording: {str(e)}")
             raise
 
     def delete_recording(self, recording_id, user_id):
-        """Delete a recording"""
+        """Delete a recording from users/{userId}/recordings subcollection"""
         try:
             # Verify ownership first
             recording = self.get_recording(recording_id, user_id)
             if not recording:
                 raise ValueError("Recording not found or access denied")
 
-            self.db.collection("recordings").document(recording_id).delete()
-            self.logger.info(f"🗑️ Recording deleted: {recording_id}")
+            # Delete from users/{userId}/recordings subcollection
+            self.db.collection("users").document(user_id).collection("recordings").document(recording_id).delete()
+            self.logger.info(f"🗑️ Recording deleted: {recording_id} for user: {user_id}")
             return True
         except Exception as e:
             self.logger.error(f"Error deleting recording: {str(e)}")

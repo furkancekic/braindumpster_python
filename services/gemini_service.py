@@ -1215,6 +1215,345 @@ Please transcribe this audio recording to text. Return only the transcribed text
             "nextSteps": []
         }
 
+    def _fix_unescaped_quotes(self, json_str: str) -> str:
+        """
+        Fix unescaped quotes and control characters in JSON string values
+        Two-pass approach:
+        1. First pass: Escape control characters within strings
+        2. Second pass: Fix unescaped quotes within string values
+        """
+        try:
+            # PASS 1: Escape control characters (\n, \r, \t) inside strings
+            result = []
+            in_string = False
+            escape_next = False
+
+            for char in json_str:
+                if escape_next:
+                    result.append(char)
+                    escape_next = False
+                    continue
+
+                if char == '\\':
+                    result.append(char)
+                    escape_next = True
+                    continue
+
+                if char == '"':
+                    result.append(char)
+                    in_string = not in_string
+                    continue
+
+                if in_string:
+                    # Inside a string - escape control characters
+                    if char == '\n':
+                        result.append('\\n')
+                    elif char == '\r':
+                        result.append('\\r')
+                    elif char == '\t':
+                        result.append('\\t')
+                    else:
+                        result.append(char)
+                else:
+                    result.append(char)
+
+            pass1_result = ''.join(result)
+
+            # PASS 2: Now fix unescaped quotes by checking JSON structure
+            # Try to parse first - if it works, we're done
+            try:
+                import json
+                json.loads(pass1_result)
+                self.logger.info("✅ JSON valid after control char fixes")
+                return pass1_result
+            except json.JSONDecodeError as e:
+                # Need to fix quotes
+                self.logger.info(f"⚠️ JSON still invalid after pass 1, attempting quote fixes...")
+                self.logger.info(f"   Error: {str(e)}")
+
+            # PASS 2: Fix unescaped quotes using lookahead
+            result = []
+            in_string = False
+            escape_next = False
+            fixes_applied = 0
+
+            i = 0
+            while i < len(pass1_result):
+                char = pass1_result[i]
+
+                if escape_next:
+                    result.append(char)
+                    escape_next = False
+                    i += 1
+                    continue
+
+                if char == '\\':
+                    result.append(char)
+                    escape_next = True
+                    i += 1
+                    continue
+
+                if char == '"':
+                    if not in_string:
+                        # Starting a string
+                        result.append(char)
+                        in_string = True
+                    else:
+                        # In a string - check if this closes it
+                        # Look ahead for JSON structural characters
+                        lookahead = pass1_result[i+1:i+20].lstrip()
+
+                        if (lookahead.startswith(':') or
+                            lookahead.startswith(',') or
+                            lookahead.startswith('}') or
+                            lookahead.startswith(']') or
+                            i == len(pass1_result) - 1):
+                            # This closes the string
+                            result.append(char)
+                            in_string = False
+                        else:
+                            # Quote inside string value - escape it
+                            result.append('\\')
+                            result.append(char)
+                            fixes_applied += 1
+                else:
+                    result.append(char)
+
+                i += 1
+
+            fixed_str = ''.join(result)
+
+            if fixes_applied > 0:
+                self.logger.info(f"🔧 Fixed {fixes_applied} unescaped quotes in JSON")
+
+            return fixed_str
+
+        except Exception as e:
+            self.logger.error(f"❌ Error fixing JSON: {str(e)}")
+            return json_str  # Return original if fix fails
+
+    def transcribe_audio_file(self, audio_data: bytes, duration: int, current_date: str, mime_type: str = "audio/mp4"):
+        """
+        Transcribe audio file to text using Gemini (Stage 1: Transcription only)
+
+        Args:
+            audio_data: Audio file data in bytes
+            duration: Duration in seconds
+            current_date: Current date string
+            mime_type: MIME type of the audio file
+
+        Returns:
+            Dict with transcript data and detected language
+        """
+        file_size_mb = len(audio_data) / (1024 * 1024)
+        self.logger.info(f"🎤📝 Stage 1: Transcribing audio - {file_size_mb:.2f} MB, {duration}s")
+
+        try:
+            from prompts.gemini_prompts import TRANSCRIPTION_ONLY_PROMPT
+            import tempfile
+            import os
+            import google.generativeai as genai
+
+            # Create prompt
+            prompt = TRANSCRIPTION_ONLY_PROMPT.format(
+                current_date=current_date,
+                duration=duration
+            )
+
+            # Use Gemini File API for large files
+            if file_size_mb > 10:
+                self.logger.info(f"📁 Using File API for transcription ({file_size_mb:.2f} MB)")
+
+                # Create temporary file
+                file_extension = mime_type.split('/')[-1]
+                if file_extension == 'mpeg':
+                    file_extension = 'mp3'
+                elif file_extension == 'mp4':
+                    file_extension = 'm4a'
+
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_extension}')
+                try:
+                    temp_file.write(audio_data)
+                    temp_file.flush()
+                    temp_file.close()
+
+                    self.logger.info(f"📤 Uploading file for transcription...")
+                    uploaded_file = genai.upload_file(path=temp_file.name, mime_type=mime_type)
+                    self.logger.info(f"✅ File uploaded: {uploaded_file.name}")
+
+                    # Wait for processing
+                    import time
+                    while uploaded_file.state.name == "PROCESSING":
+                        self.logger.info("⏳ Waiting for file processing...")
+                        time.sleep(2)
+                        uploaded_file = genai.get_file(uploaded_file.name)
+
+                    if uploaded_file.state.name == "FAILED":
+                        raise Exception(f"File processing failed: {uploaded_file.state}")
+
+                    self.logger.info(f"🤖 Sending transcription request to Gemini...")
+                    # Optimized config for transcription (fast, accurate)
+                    generation_config = {
+                        "temperature": 0.2,  # Very low for accurate transcription
+                        "top_p": 0.95,
+                        "top_k": 40,
+                        "max_output_tokens": 65536,
+                    }
+                    response = self.model.generate_content(
+                        [prompt, uploaded_file],
+                        generation_config=generation_config
+                    )
+
+                    response_text = response.text.strip()
+                    self.logger.info(f"✅ Transcription complete: {len(response_text)} chars")
+
+                    # Delete uploaded file
+                    genai.delete_file(uploaded_file.name)
+
+                finally:
+                    if os.path.exists(temp_file.name):
+                        os.unlink(temp_file.name)
+
+            else:
+                # Inline data for small files
+                self.logger.info(f"📦 Using inline data for transcription ({file_size_mb:.2f} MB)")
+                import base64
+
+                audio_part = {
+                    "inline_data": {
+                        "mime_type": mime_type,
+                        "data": base64.b64encode(audio_data).decode("utf-8")
+                    }
+                }
+
+                generation_config = {
+                    "temperature": 0.2,
+                    "top_p": 0.95,
+                    "top_k": 40,
+                    "max_output_tokens": 65536,
+                }
+                response = self.model.generate_content(
+                    [prompt, audio_part],
+                    generation_config=generation_config
+                )
+                response_text = response.text.strip()
+
+            # Extract JSON from response
+            transcription_json = self._extract_json_from_response(response_text)
+
+            if not transcription_json:
+                self.logger.warning("⚠️ Transcription returned invalid JSON")
+                return {"success": False, "error": "Invalid transcription response"}
+
+            self.logger.info(f"✅ Stage 1 complete: Language={transcription_json.get('language')}, Speakers={transcription_json.get('speakerCount')}")
+            return {"success": True, "transcription": transcription_json}
+
+        except Exception as e:
+            self.logger.error(f"❌ Transcription error: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def quick_analyze_transcript(self, transcript_text: str, language: str, current_date: str):
+        """
+        Quick analysis of transcript for basic summary and action items (Stage 2: Quick Analysis)
+
+        Args:
+            transcript_text: Full transcript as text
+            language: Detected language
+            current_date: Current date string
+
+        Returns:
+            Dict with quick analysis (summary, action items, metadata)
+        """
+        self.logger.info(f"⚡ Stage 2: Quick analysis - Language={language}, Transcript length={len(transcript_text)} chars")
+
+        try:
+            from prompts.gemini_prompts import QUICK_ANALYSIS_PROMPT
+
+            # Create prompt
+            prompt = QUICK_ANALYSIS_PROMPT.format(
+                current_date=current_date,
+                language=language,
+                transcript=transcript_text[:50000]  # Limit transcript to 50K chars for quick analysis
+            )
+
+            self.logger.info("🚀 Sending quick analysis request to Gemini...")
+            generation_config = {
+                "temperature": 0.4,
+                "top_p": 0.95,
+                "top_k": 40,
+                "max_output_tokens": 8192,  # Smaller limit for quick analysis
+            }
+            response = self.model.generate_content(prompt, generation_config=generation_config)
+            response_text = response.text.strip()
+
+            self.logger.info(f"✅ Quick analysis response: {len(response_text)} chars")
+
+            # Extract JSON
+            analysis_json = self._extract_json_from_response(response_text)
+
+            if not analysis_json:
+                self.logger.warning("⚠️ Quick analysis returned invalid JSON")
+                return {"success": False, "error": "Invalid analysis response"}
+
+            self.logger.info(f"✅ Stage 2 complete: Type={analysis_json.get('metadata', {}).get('detectedType')}")
+            return {"success": True, "analysis": analysis_json}
+
+        except Exception as e:
+            self.logger.error(f"❌ Quick analysis error: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
+    def deep_analyze_transcript(self, transcript_text: str, language: str, recording_type: str, current_date: str):
+        """
+        Deep analysis of transcript for comprehensive insights (Stage 3: Deep Analysis)
+
+        Args:
+            transcript_text: Full transcript as text
+            language: Detected language
+            recording_type: Type of recording (meeting, lecture, personal)
+            current_date: Current date string
+
+        Returns:
+            Dict with full analysis (key points, decisions, sentiment, topics, etc.)
+        """
+        self.logger.info(f"🔍 Stage 3: Deep analysis - Type={recording_type}, Language={language}")
+
+        try:
+            from prompts.gemini_prompts import DEEP_ANALYSIS_PROMPT
+
+            # Create prompt
+            prompt = DEEP_ANALYSIS_PROMPT.format(
+                current_date=current_date,
+                language=language,
+                recording_type=recording_type,
+                transcript=transcript_text  # Full transcript for deep analysis
+            )
+
+            self.logger.info("🚀 Sending deep analysis request to Gemini...")
+            generation_config = {
+                "temperature": 0.4,
+                "top_p": 0.95,
+                "top_k": 40,
+                "max_output_tokens": 65536,  # Full limit for deep analysis
+            }
+            response = self.model.generate_content(prompt, generation_config=generation_config)
+            response_text = response.text.strip()
+
+            self.logger.info(f"✅ Deep analysis response: {len(response_text)} chars")
+
+            # Extract JSON
+            analysis_json = self._extract_json_from_response(response_text)
+
+            if not analysis_json:
+                self.logger.warning("⚠️ Deep analysis returned invalid JSON")
+                return {"success": False, "error": "Invalid deep analysis response"}
+
+            self.logger.info(f"✅ Stage 3 complete: KeyPoints={len(analysis_json.get('keyPoints', []))}, Decisions={len(analysis_json.get('decisions', []))}")
+            return {"success": True, "analysis": analysis_json}
+
+        except Exception as e:
+            self.logger.error(f"❌ Deep analysis error: {str(e)}", exc_info=True)
+            return {"success": False, "error": str(e)}
+
     def _extract_json_from_response(self, response_text: str):
         """
         Extract JSON from Gemini response
@@ -1255,6 +1594,18 @@ Please transcribe this audio recording to text. Return only the transcribed text
                             return parsed_data
                         except json.JSONDecodeError as e:
                             self.logger.warning(f"⚠️ Pattern {i+1} matched but JSON invalid: {str(e)}")
+                            self.logger.warning(f"   Attempting to fix unescaped quotes...")
+
+                            # Try to fix unescaped quotes in string values
+                            fixed_json = self._fix_unescaped_quotes(json_str)
+                            if fixed_json != json_str:
+                                try:
+                                    parsed_data = json.loads(fixed_json)
+                                    self.logger.info(f"✅ Successfully parsed JSON after fixing quotes")
+                                    return parsed_data
+                                except json.JSONDecodeError as e2:
+                                    self.logger.warning(f"⚠️ Still invalid after fix: {str(e2)}")
+
                             self.logger.warning(f"   JSON start: {json_str[:200]}")
                             continue  # Try next pattern
                     else:

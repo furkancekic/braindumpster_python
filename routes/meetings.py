@@ -22,186 +22,85 @@ meetings_bp = Blueprint('meetings', __name__, url_prefix='/api/meetings')
 
 def _process_audio_in_background(recording_id, audio_data, duration, mime_type, user_id):
     """
-    Background task to process audio with Gemini AI using progressive loading
-    This runs in a separate thread with 3 stages: transcription → quick analysis → deep analysis
+    Background task to process audio with Gemini AI
+    This runs in a separate thread to avoid blocking the HTTP response
     """
     try:
         from datetime import timezone
         from flask import current_app
 
-        logger.info(f"🔄 Progressive processing started for recording: {recording_id}")
+        logger.info(f"🔄 Background processing started for recording: {recording_id}")
 
         # Get services from app context
         firebase_service = current_app.firebase_service
         gemini_service = current_app.gemini_service
+
         current_date = datetime.now().strftime("%B %d, %Y")
 
-        # ========== STAGE 1: TRANSCRIPTION (30-60s) ==========
-        logger.info(f"📝 Stage 1/3: Starting transcription for {recording_id}...")
-
-        # Update status to transcribing
-        firebase_service.update_recording(recording_id, {
-            'status': 'transcribing',
-            'transcriptProgress': 0.0,
-            'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-        }, user_id)
-
-        # Transcribe audio
-        transcription_result = gemini_service.transcribe_audio_file(
+        # Analyze with Gemini
+        logger.info(f"🤖 Sending to Gemini for analysis (recording: {recording_id})...")
+        analysis_result = gemini_service.analyze_audio_recording(
             audio_data=audio_data,
             duration=duration,
             current_date=current_date,
             mime_type=mime_type
         )
 
-        if not transcription_result.get('success'):
-            logger.error(f"❌ Transcription failed for {recording_id}: {transcription_result.get('error')}")
+        if not analysis_result.get('success'):
+            logger.error(f"❌ Gemini analysis failed for recording {recording_id}: {analysis_result.get('error')}")
+            # Update recording status to failed
             firebase_service.update_recording(recording_id, {
                 'status': 'failed',
-                'error': transcription_result.get('error', 'Transcription failed'),
+                'error': analysis_result.get('error', 'AI analysis failed'),
                 'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
             }, user_id)
             return
 
-        # Extract transcription data
-        transcription_data = transcription_result.get('transcription', {})
-        transcript_text = transcription_data.get('transcriptText', '')
-        transcript_segments = transcription_data.get('transcript', [])
-        detected_language = transcription_data.get('language', 'en')
-        speaker_count = transcription_data.get('speakerCount', 0)
+        # Extract analysis
+        analysis = analysis_result.get('analysis', {})
+        metadata = analysis.get('metadata', {})
 
-        logger.info(f"✅ Stage 1 complete: Transcript ready ({len(transcript_text)} chars, {speaker_count} speakers)")
+        logger.info(f"✅ Analysis complete for {recording_id}. Type: {metadata.get('detectedType')}, Title: {metadata.get('suggestedTitle')}")
 
-        # Update status to transcript_ready with transcript data
-        firebase_service.update_recording(recording_id, {
-            'status': 'transcript_ready',
-            'transcriptText': transcript_text,
-            'transcript': transcript_segments,
-            'transcriptProgress': 1.0,
-            'language': detected_language,
-            'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-        }, user_id)
+        # Ensure summary has required fields
+        summary = analysis.get('summary', {})
+        if not summary or not summary.get('brief'):
+            summary = {
+                'brief': 'Recording analyzed',
+                'detailed': 'Audio recording has been processed and analyzed.',
+                'keyTakeaways': []
+            }
 
-        # ========== STAGE 2: QUICK ANALYSIS (60-90s) ==========
-        logger.info(f"⚡ Stage 2/3: Starting quick analysis for {recording_id}...")
-
-        # Update status to analyzing_quick
-        firebase_service.update_recording(recording_id, {
-            'status': 'analyzing_quick',
-            'analysisStage': 'Generating summary and action items...',
-            'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-        }, user_id)
-
-        # Quick analysis
-        quick_analysis_result = gemini_service.quick_analyze_transcript(
-            transcript_text=transcript_text,
-            language=detected_language,
-            current_date=current_date
-        )
-
-        if not quick_analysis_result.get('success'):
-            logger.error(f"❌ Quick analysis failed for {recording_id}: {quick_analysis_result.get('error')}")
-            # Continue with transcription only - don't fail completely
-            firebase_service.update_recording(recording_id, {
-                'status': 'transcript_ready',
-                'error': 'Analysis partially failed',
-                'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-            }, user_id)
-            return
-
-        # Extract quick analysis data
-        quick_analysis = quick_analysis_result.get('analysis', {})
-        metadata = quick_analysis.get('metadata', {})
-        summary = quick_analysis.get('summary', {})
-        action_items = quick_analysis.get('actionItems', [])
-
-        logger.info(f"✅ Stage 2 complete: Type={metadata.get('detectedType')}, ActionItems={len(action_items)}")
-
-        # Update status to preview_ready with quick analysis
-        firebase_service.update_recording(recording_id, {
-            'status': 'preview_ready',
+        # Update recording with full analysis
+        now = datetime.now(timezone.utc).replace(microsecond=0)
+        updates = {
+            'status': 'completed',
             'title': metadata.get('suggestedTitle', 'Untitled Recording'),
             'type': metadata.get('detectedType', 'personal'),
             'aiDetected': metadata.get('confidence', 0) > 0.7,
-            'summary': {
-                'brief': summary.get('brief', 'Recording analyzed'),
-                'keyTakeaways': summary.get('keyTakeaways', [])
-            },
-            'actionItems': action_items,
-            'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-        }, user_id)
-
-        # ========== STAGE 3: DEEP ANALYSIS (90-120s) ==========
-        logger.info(f"🔍 Stage 3/3: Starting deep analysis for {recording_id}...")
-
-        # Update status to analyzing_deep
-        firebase_service.update_recording(recording_id, {
-            'status': 'analyzing_deep',
-            'analysisStage': 'Analyzing key points, decisions, and sentiment...',
-            'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-        }, user_id)
-
-        # Deep analysis
-        deep_analysis_result = gemini_service.deep_analyze_transcript(
-            transcript_text=transcript_text,
-            language=detected_language,
-            recording_type=metadata.get('detectedType', 'personal'),
-            current_date=current_date
-        )
-
-        if not deep_analysis_result.get('success'):
-            logger.error(f"❌ Deep analysis failed for {recording_id}: {deep_analysis_result.get('error')}")
-            # Stay in preview_ready state - user has basic analysis
-            firebase_service.update_recording(recording_id, {
-                'status': 'preview_ready',
-                'error': 'Deep analysis partially failed',
-                'updatedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
-            }, user_id)
-            return
-
-        # Extract deep analysis data
-        deep_analysis = deep_analysis_result.get('analysis', {})
-        detailed_summary = deep_analysis.get('summary', {})
-        key_points = deep_analysis.get('keyPoints', [])
-        decisions = deep_analysis.get('decisions', [])
-        sentiment = deep_analysis.get('sentiment')
-        topics = deep_analysis.get('topics', [])
-        questions = deep_analysis.get('questions', [])
-        next_steps = deep_analysis.get('nextSteps', [])
-
-        logger.info(f"✅ Stage 3 complete: KeyPoints={len(key_points)}, Decisions={len(decisions)}")
-
-        # Update status to completed with full analysis
-        now = datetime.now(timezone.utc).replace(microsecond=0)
-        final_updates = {
-            'status': 'completed',
-            'summary': {
-                'brief': summary.get('brief', 'Recording analyzed'),
-                'detailed': detailed_summary.get('detailed', ''),
-                'keyTakeaways': summary.get('keyTakeaways', [])
-            },
-            'keyPoints': key_points,
-            'decisions': decisions,
-            'sentiment': sentiment,
-            'topics': topics,
-            'questions': questions,
-            'nextSteps': next_steps,
-            'analysisStage': None,  # Clear stage indicator
+            'language': metadata.get('language', 'en'),
+            'summary': summary,
+            'sentiment': analysis.get('sentiment'),
+            'transcript': analysis.get('transcript', []),
+            'actionItems': analysis.get('actionItems', []),
+            'keyPoints': analysis.get('keyPoints', []),
+            'decisions': analysis.get('decisions', []),
+            'topics': analysis.get('topics', []),
+            'questions': analysis.get('questions', []),
+            'nextSteps': analysis.get('nextSteps', []),
             'updatedAt': now.isoformat().replace('+00:00', 'Z')
         }
 
-        firebase_service.update_recording(recording_id, final_updates, user_id)
+        firebase_service.update_recording(recording_id, updates, user_id)
 
-        logger.info(f"💾 Recording {recording_id} completed with full progressive analysis")
-        logger.info(f"   📝 Transcript: {len(transcript_segments)} segments")
-        logger.info(f"   📋 Action Items: {len(action_items)}")
-        logger.info(f"   🎯 Key Points: {len(key_points)}")
-        logger.info(f"   ✅ Decisions: {len(decisions)}")
+        logger.info(f"💾 Recording {recording_id} updated with complete analysis")
+        logger.info(f"   Key Points: {len(updates.get('keyPoints', []))}")
+        logger.info(f"   Transcript: {len(updates.get('transcript', []))} segments")
 
     except Exception as e:
         import traceback
         error_details = traceback.format_exc()
-        logger.error(f"❌ Error in progressive processing for recording {recording_id}: {str(e)}")
+        logger.error(f"❌ Error in background processing for recording {recording_id}: {str(e)}")
         logger.error(f"Full traceback:\n{error_details}")
 
         # Update recording status to failed

@@ -254,10 +254,19 @@ Return a JSON response with updated context information.
 
 MEETING_ANALYSIS_PROMPT = """You are an AI meeting/lecture analyzer with AUDIO TRANSCRIPTION capabilities.
 
-🎤 AUDIO PROCESSING INSTRUCTIONS:
+🎤 AUDIO PROCESSING & SPEAKER DIARIZATION INSTRUCTIONS:
 - You MUST listen to and transcribe the entire audio recording provided
 - Extract spoken words, conversations, and discussions from the audio
-- Identify different speakers and their contributions
+- **CRITICAL: IDENTIFY ALL UNIQUE SPEAKERS** - Listen carefully to voice characteristics
+- Distinguish speakers by:
+  * Voice pitch (high/low)
+  * Voice tone and timber
+  * Speaking patterns and cadence
+  * Gender differences
+  * Speech characteristics
+- Label EACH UNIQUE VOICE as a separate speaker (Speaker 1, Speaker 2, Speaker 3, Speaker 4, etc.)
+- NEVER merge different voices into the same speaker label
+- If you detect 4 different voices, you MUST create 4 different speakers
 - Capture the audio content accurately even if it's a single person speaking
 - Transcribe the audio into text and then analyze it according to the rules below
 
@@ -407,7 +416,13 @@ IMPORTANT GUIDELINES:
 5. For tasks, suggest realistic dates based on context
 6. "You" = the person who made the recording
 7. Timestamps in MM:SS or HH:MM:SS format
-8. Identify speakers as "Speaker 1", "Speaker 2" or use names if mentioned
+8. **SPEAKER IDENTIFICATION IS CRITICAL:**
+   - Listen to voice characteristics carefully
+   - Identify EVERY unique voice as a separate speaker
+   - Use "Speaker 1", "Speaker 2", "Speaker 3", "Speaker 4", etc. for each distinct voice
+   - Use real names ONLY if explicitly mentioned in the audio
+   - DO NOT group different voices under the same speaker number
+   - If there are 4 different voices, return 4 different speakers in speakerCount
 9. Calculate speaker talk time percentages accurately
 10. Sentiment should reflect tone and energy, not just words
 11. Group related discussion points into topics

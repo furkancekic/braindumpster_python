@@ -93,8 +93,8 @@ class GeminiService:
         """Create a fresh model instance for connection issues"""
         try:
             self.logger.info("🔄 Creating fresh Gemini model instance...")
-            # Use Gemini 2.0 Flash Exp - only model that works with File API in v1beta
-            self.model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            # Use Gemini 2.5 Flash - consistent with main model
+            self.model = genai.GenerativeModel('gemini-2.5-flash')
             self.logger.info("✅ Fresh Gemini model created successfully")
         except Exception as e:
             self.logger.error(f"❌ Failed to create fresh Gemini model: {str(e)}")
@@ -1101,7 +1101,7 @@ Please transcribe this audio recording to text. Return only the transcribed text
                     self.logger.info(f"🤖 Sending to Gemini for analysis...")
                     # Call Gemini API with uploaded file and optimized config for audio
                     generation_config = {
-                        "temperature": 0.4,  # Lower temperature for more consistent transcription
+                        "temperature": 0.7,  # Higher temperature for better speaker diarization and natural transcription
                         "top_p": 0.95,
                         "top_k": 40,
                         "max_output_tokens": 65536,  # High limit for long transcripts (gemini-2.0 supports up to 65k)
@@ -1151,7 +1151,7 @@ Please transcribe this audio recording to text. Return only the transcribed text
 
                 # Call Gemini API with optimized config for audio
                 generation_config = {
-                    "temperature": 0.4,  # Lower temperature for more consistent transcription
+                    "temperature": 0.7,  # Higher temperature for better speaker diarization and natural transcription
                     "top_p": 0.95,
                     "top_k": 40,
                     "max_output_tokens": 65536,  # High limit for long transcripts (gemini-2.0 supports up to 65k)

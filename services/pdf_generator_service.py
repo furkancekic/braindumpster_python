@@ -189,6 +189,17 @@ class PDFGeneratorService:
         if not key_takeaways and isinstance(summary, dict):
             key_takeaways = summary.get('keyTakeaways', [])
 
+        # Extract 'point' text from dict format if needed
+        # Database stores keyPoints as list of dicts: [{'point': 'text', 'sentiment': '...', ...}]
+        # We need just the text for PDF rendering
+        processed_takeaways = []
+        for item in key_takeaways:
+            if isinstance(item, dict) and 'point' in item:
+                processed_takeaways.append(item['point'])
+            elif isinstance(item, str):
+                processed_takeaways.append(item)
+        key_takeaways = processed_takeaways
+
         # Get action items - prefer top-level actionItems, fallback to summary.actionItems
         action_items = recording_data.get('actionItems', [])
         if not action_items and isinstance(summary, dict):
@@ -202,6 +213,24 @@ class PDFGeneratorService:
             detailed_summary = summary.get('detailed', '')
         elif isinstance(summary, str):
             detailed_summary = summary
+
+        # Process questions - extract 'question' text from dict format
+        questions = recording_data.get('questions', [])
+        processed_questions = []
+        for item in questions:
+            if isinstance(item, dict) and 'question' in item:
+                processed_questions.append(item['question'])
+            elif isinstance(item, str):
+                processed_questions.append(item)
+
+        # Process topics - extract 'topic' text from dict format
+        topics = recording_data.get('topics', [])
+        processed_topics = []
+        for item in topics:
+            if isinstance(item, dict) and 'topic' in item:
+                processed_topics.append(item['topic'])
+            elif isinstance(item, str):
+                processed_topics.append(item)
 
         # Prepare enhanced data
         enhanced_data = {
@@ -221,9 +250,9 @@ class PDFGeneratorService:
                 'full_transcript': full_transcript,
                 'speakers_count': speakers_count
             },
-            # Add top-level fields for templates
-            'topics': recording_data.get('topics', []),
-            'questions': recording_data.get('questions', []),
+            # Add top-level fields for templates (processed to extract text)
+            'topics': processed_topics,
+            'questions': processed_questions,
             'decisions': recording_data.get('decisions', []),
             'nextSteps': recording_data.get('nextSteps', []),
             'sentiment': recording_data.get('sentiment', 'neutral')

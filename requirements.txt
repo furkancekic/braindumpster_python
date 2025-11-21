@@ -28,7 +28,7 @@ python-jose[cryptography]==3.3.0
 redis>=4.0.0
 
 # PDF Generation
-WeasyPrint==60.1
+WeasyPrint==66.0
 Jinja2==3.1.2
 Pillow==10.1.0
 cairocffi==1.6.1

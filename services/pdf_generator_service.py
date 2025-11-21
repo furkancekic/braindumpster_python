@@ -167,11 +167,16 @@ class PDFGeneratorService:
         # Detect language
         language = self.detect_language(recording_data)
 
+        # Get transcript from top-level (new structure) or summary.fullTranscript (old structure)
+        full_transcript = recording_data.get('transcript', [])
+        summary = recording_data.get('summary', {})
+
+        # Fallback to summary.fullTranscript if transcript is empty
+        if not full_transcript and isinstance(summary, dict):
+            full_transcript = summary.get('fullTranscript', [])
+
         # Count speakers from transcript
         speakers_count = 1
-        summary = recording_data.get('summary', {})
-        full_transcript = summary.get('fullTranscript', [])
-
         if full_transcript:
             unique_speakers = set()
             for entry in full_transcript:
@@ -179,9 +184,28 @@ class PDFGeneratorService:
                 unique_speakers.add(speaker)
             speakers_count = len(unique_speakers)
 
+        # Get key takeaways - prefer top-level keyPoints, fallback to summary.keyTakeaways
+        key_takeaways = recording_data.get('keyPoints', [])
+        if not key_takeaways and isinstance(summary, dict):
+            key_takeaways = summary.get('keyTakeaways', [])
+
+        # Get action items - prefer top-level actionItems, fallback to summary.actionItems
+        action_items = recording_data.get('actionItems', [])
+        if not action_items and isinstance(summary, dict):
+            action_items = summary.get('actionItems', [])
+
+        # Get summary text - handle both dict and string formats
+        brief_summary = ''
+        detailed_summary = ''
+        if isinstance(summary, dict):
+            brief_summary = summary.get('brief', '')
+            detailed_summary = summary.get('detailed', '')
+        elif isinstance(summary, str):
+            detailed_summary = summary
+
         # Prepare enhanced data
         enhanced_data = {
-            'id': recording_data.get('recordingId', ''),
+            'id': recording_data.get('recordingId', recording_data.get('id', '')),
             'title': recording_data.get('title', 'Untitled Meeting'),
             'created_at': recording_data.get('createdAt', ''),
             'created_at_formatted': self.format_date(recording_data.get('createdAt', '')),
@@ -190,13 +214,19 @@ class PDFGeneratorService:
             'detected_language': language,
             'detected_language_display': self.get_language_display(language),
             'summary': {
-                'brief': summary.get('brief', ''),
-                'detailed': summary.get('detailed', ''),
-                'key_takeaways': summary.get('keyTakeaways', []),
-                'action_items': summary.get('actionItems', []),
+                'brief': brief_summary,
+                'detailed': detailed_summary,
+                'key_takeaways': key_takeaways,
+                'action_items': action_items,
                 'full_transcript': full_transcript,
                 'speakers_count': speakers_count
-            }
+            },
+            # Add top-level fields for templates
+            'topics': recording_data.get('topics', []),
+            'questions': recording_data.get('questions', []),
+            'decisions': recording_data.get('decisions', []),
+            'nextSteps': recording_data.get('nextSteps', []),
+            'sentiment': recording_data.get('sentiment', 'neutral')
         }
 
         return enhanced_data

@@ -300,13 +300,17 @@ class PDFGeneratorService:
                 total_pages += transcript_pages
             total_pages += 1  # Footer page
 
-            # Render HTML template
+            # Read CSS content
+            with open(self.css_path, 'r', encoding='utf-8') as f:
+                css_content = f.read()
+
+            # Render HTML template with inline CSS
             template = self.jinja_env.get_template('pdf/meeting_report.html')
             html_content = template.render(
                 recording=enhanced_data,
                 language=language,
                 title=enhanced_data['title'],
-                css_path=self.css_path,
+                css_content=css_content,
                 generated_at=datetime.now().strftime("%B %d, %Y at %I:%M %p"),
                 total_pages=total_pages
             )
@@ -314,7 +318,7 @@ class PDFGeneratorService:
             logger.info("✅ HTML template rendered successfully")
 
             # Generate PDF with WeasyPrint
-            html_doc = HTML(string=html_content, base_url=self.static_dir)
+            html_doc = HTML(string=html_content)
             pdf_bytes = html_doc.write_pdf()
 
             logger.info(f"✅ PDF generated successfully, size: {len(pdf_bytes)} bytes")

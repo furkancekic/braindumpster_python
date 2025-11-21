@@ -26,3 +26,9 @@ python-jose[cryptography]==3.3.0
 
 # Redis for rate limiting (optional)
 redis>=4.0.0
+
+# PDF Generation
+WeasyPrint==60.1
+Jinja2==3.1.2
+Pillow==10.1.0
+cairocffi==1.6.1

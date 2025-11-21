@@ -3,9 +3,9 @@ Meeting Recorder Routes
 Handles audio recording analysis, storage, and chat functionality for meetings/lectures
 """
 
-from flask import Blueprint, request, jsonify, current_app, copy_current_request_context
+from flask import Blueprint, request, jsonify, current_app, copy_current_request_context, send_file
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import json
 import re
@@ -96,6 +96,45 @@ def _process_audio_in_background(recording_id, audio_data, duration, mime_type, 
         logger.info(f"💾 Recording {recording_id} updated with complete analysis")
         logger.info(f"   Key Points: {len(updates.get('keyPoints', []))}")
         logger.info(f"   Transcript: {len(updates.get('transcript', []))} segments")
+
+        # Generate PDF automatically after analysis
+        try:
+            from services.pdf_generator_service import get_pdf_service
+
+            logger.info(f"📄 Starting automatic PDF generation for {recording_id}...")
+
+            pdf_service = get_pdf_service()
+
+            # Prepare recording data for PDF generation
+            recording_data = {
+                'recordingId': recording_id,
+                'title': updates['title'],
+                'createdAt': now.isoformat().replace('+00:00', 'Z'),
+                'updatedAt': updates['updatedAt'],
+                'duration': duration,
+                'summary': updates['summary'],
+                'detected_language': updates.get('language', 'en')
+            }
+
+            # Generate and save PDF
+            pdf_bytes, filename, error = pdf_service.generate_pdf(recording_data, save_to_storage=True)
+
+            if pdf_bytes:
+                logger.info(f"✅ PDF generated automatically: {filename} ({len(pdf_bytes)} bytes)")
+
+                # Update recording with PDF availability flag
+                firebase_service.update_recording(recording_id, {
+                    'pdfAvailable': True,
+                    'pdfGeneratedAt': now.isoformat().replace('+00:00', 'Z')
+                }, user_id)
+            else:
+                logger.error(f"❌ PDF generation failed: {error}")
+
+        except Exception as pdf_error:
+            # Don't fail the entire analysis if PDF generation fails
+            logger.error(f"❌ Error generating PDF (non-critical): {pdf_error}")
+            import traceback
+            logger.error(traceback.format_exc())
 
     except Exception as e:
         import traceback
@@ -401,4 +440,93 @@ def chat_with_recording(recording_id):
 
     except Exception as e:
         logger.error(f"❌ Error in chat: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
+
+
+@meetings_bp.route('/<recording_id>/pdf', methods=['GET'])
+@require_auth
+def download_pdf(recording_id):
+    """
+    Download PDF report for a recording.
+
+    The PDF is automatically generated after analysis completes.
+    If PDF doesn't exist yet, it will be generated on-demand.
+    """
+    try:
+        from services.pdf_generator_service import get_pdf_service
+        from io import BytesIO
+
+        firebase_service = current_app.firebase_service
+        user_id = request.user_id
+
+        logger.info(f"📥 PDF download request for recording: {recording_id} by user: {user_id}")
+
+        # Get recording data
+        recording = firebase_service.get_recording(recording_id, user_id)
+
+        if not recording:
+            logger.warning(f"⚠️ Recording not found: {recording_id}")
+            return jsonify({'error': 'Recording not found'}), 404
+
+        # Check if recording is completed
+        if recording.get('status') != 'completed':
+            logger.warning(f"⚠️ Recording not yet analyzed: {recording_id}")
+            return jsonify({
+                'error': 'Recording not yet analyzed',
+                'status': recording.get('status', 'unknown')
+            }), 400
+
+        pdf_service = get_pdf_service()
+
+        # Try to get stored PDF first
+        pdf_bytes = pdf_service.get_stored_pdf(recording_id)
+
+        # If not found, generate on-demand (fallback)
+        if not pdf_bytes:
+            logger.info(f"📄 PDF not found in storage, generating on-demand for {recording_id}")
+
+            # Prepare recording data
+            summary = recording.get('summary', {})
+            recording_data = {
+                'recordingId': recording_id,
+                'title': recording.get('title', 'Untitled Meeting'),
+                'createdAt': recording.get('createdAt', ''),
+                'updatedAt': recording.get('updatedAt', ''),
+                'duration': recording.get('duration', 0),
+                'summary': summary,
+                'detected_language': recording.get('language', 'en')
+            }
+
+            # Generate PDF
+            pdf_bytes, filename, error = pdf_service.generate_pdf(recording_data, save_to_storage=True)
+
+            if not pdf_bytes:
+                logger.error(f"❌ PDF generation failed: {error}")
+                return jsonify({'error': 'PDF generation failed', 'details': error}), 500
+
+            # Update recording with PDF availability
+            firebase_service.update_recording(recording_id, {
+                'pdfAvailable': True,
+                'pdfGeneratedAt': datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace('+00:00', 'Z')
+            }, user_id)
+
+        # Prepare filename with language-aware sanitization
+        language = recording.get('language', 'en')
+        title = recording.get('title', 'Meeting_Report')
+        sanitized_title = pdf_service.sanitize_filename(title, language)
+        date_str = datetime.now().strftime("%Y%m%d")
+        filename = f"{sanitized_title}_{date_str}.pdf"
+
+        logger.info(f"✅ Sending PDF: {filename} ({len(pdf_bytes)} bytes)")
+
+        # Send PDF as downloadable file
+        return send_file(
+            BytesIO(pdf_bytes),
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        logger.error(f"❌ Error downloading PDF: {str(e)}", exc_info=True)
         return jsonify({'error': 'Internal server error', 'details': str(e)}), 500
